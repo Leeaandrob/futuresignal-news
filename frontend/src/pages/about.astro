@@ -2,21 +2,21 @@
 import Base from "@/layouts/Base.astro";
 ---
 
-<Base title="About" description="Learn about FutureSignals and our mission to make prediction market data accessible.">
+<Base title="About" description="FutureSignals - The Bloomberg of Prediction Markets. Real-time signals and editorial analysis from Polymarket.">
   <article class="container py-8 max-w-3xl">
     <h1 class="headline-xl mb-6">About FutureSignals</h1>
 
     <div class="prose prose-lg max-w-none">
       <p class="lead text-xl text-muted-foreground mb-8">
-        FutureSignals transforms raw prediction market data into actionable editorial narratives,
-        helping you understand what markets are actually pricing in.
+        The Bloomberg of Prediction Markets. We transform raw prediction market data into
+        actionable editorial content, helping you understand what markets are pricing in.
       </p>
 
       <h2>What We Do</h2>
       <p>
-        We monitor prediction markets 24/7, detecting significant probability shifts before they
-        become news. When we spot a signal — a market moving 7% or more with substantial volume —
-        we generate an editorial analysis explaining what changed, why it matters, and what to watch next.
+        FutureSignals monitors <a href="https://polymarket.com" target="_blank" rel="noopener">Polymarket</a> 24/7,
+        automatically detecting new markets, significant probability shifts, and generating editorial analysis.
+        When something moves, we explain what changed, why it matters, and what to watch next.
       </p>
 
       <h2>Why Prediction Markets?</h2>
@@ -27,23 +27,25 @@ import Base from "@/layouts/Base.astro";
         best real-time signal we have about future events.
       </p>
 
-      <h2>Our Signal Detection</h2>
-      <p>
-        Not every market move is newsworthy. We focus on signals that meet specific criteria:
-      </p>
+      <h2>Content Types</h2>
       <ul>
-        <li><strong>Significant movement:</strong> At least 7% probability change</li>
-        <li><strong>Real volume:</strong> Minimum $50,000 in 24-hour trading</li>
-        <li><strong>Market relevance:</strong> Active markets with established liquidity</li>
+        <li><strong>New Markets:</strong> Coverage of newly launched prediction markets</li>
+        <li><strong>Breaking:</strong> Significant probability shifts (7%+ moves)</li>
+        <li><strong>Digests:</strong> Daily category summaries (Crypto, Politics, Sports, etc.)</li>
+        <li><strong>Trending:</strong> Markets gaining momentum and volume</li>
       </ul>
 
       <h2>Categories</h2>
-      <p>We cover four main areas:</p>
+      <p>We cover all major Polymarket categories:</p>
       <ul>
-        <li><strong>Politics:</strong> Elections, policy decisions, central bank actions</li>
-        <li><strong>Tech:</strong> AI developments, regulation, major company events</li>
-        <li><strong>Crypto:</strong> ETF approvals, protocol updates, market milestones</li>
-        <li><strong>Global:</strong> Geopolitical events, international affairs, conflicts</li>
+        <li><strong>Politics:</strong> Elections, policy, nominations</li>
+        <li><strong>Crypto:</strong> Bitcoin, Ethereum, DeFi, regulations</li>
+        <li><strong>Sports:</strong> NFL, NBA, UFC, major events</li>
+        <li><strong>Finance:</strong> Fed decisions, interest rates, markets</li>
+        <li><strong>Tech:</strong> AI, companies, product launches</li>
+        <li><strong>Geopolitics:</strong> International affairs, conflicts</li>
+        <li><strong>World:</strong> Global events and news</li>
+        <li><strong>Economy:</strong> Economic indicators, employment</li>
       </ul>
 
       <h2>Editorial Independence</h2>
@@ -53,11 +55,17 @@ import Base from "@/layouts/Base.astro";
         Our goal is to make prediction market data accessible and understandable.
       </p>
 
-      <h2>Data Sources</h2>
+      <h2>Technology Stack</h2>
       <p>
-        Our primary data source is <a href="https://polymarket.com" target="_blank" rel="noopener">Polymarket</a>,
-        the leading prediction market platform. We access data through their public APIs and
-        process it in real-time to detect signals.
+        FutureSignals is built with modern technologies: Go backend, Astro + React frontend,
+        MongoDB for data, deployed on Kubernetes with Cloudflare CDN. Content is enriched
+        using multiple AI and news APIs for comprehensive analysis.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Follow us on <a href="https://twitter.com/leeaandrob" target="_blank" rel="noopener">Twitter @leeaandrob</a>
+        for updates and feedback.
       </p>
     </div>
   </article>

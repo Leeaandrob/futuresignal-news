@@ -47,30 +47,23 @@ export function MarketCard({
     return (
       <a
         href={getMarketUrl(market.slug)}
-        className="flex items-center justify-between p-3 border-b hover:bg-muted/50 transition-colors"
+        className="flex items-start gap-2 p-3 border-b hover:bg-muted/50 transition-colors overflow-hidden"
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div
-            className={cn(
-              "flex items-center gap-1 font-mono font-semibold text-sm w-16 shrink-0",
-              isPositive ? "text-bullish" : "text-bearish"
-            )}
-          >
-            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {isPositive ? "+" : ""}
-            {(change * 100).toFixed(1)}%
-          </div>
-          <span className="font-mono font-bold text-sm w-12 shrink-0">
-            {(probability * 100).toFixed(0)}%
-          </span>
-          {showCategory && (
-            <Badge variant={category as any} className="shrink-0 text-xs">
-              {category.toUpperCase().slice(0, 4)}
-            </Badge>
+        <div
+          className={cn(
+            "flex items-center gap-1 font-mono font-semibold text-xs shrink-0 mt-0.5",
+            isPositive ? "text-bullish" : "text-bearish"
           )}
-          <span className="text-sm truncate">{market.question}</span>
+        >
+          {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {isPositive ? "+" : ""}
+          {(change * 100).toFixed(1)}%
         </div>
-        <span className="text-xs text-muted-foreground shrink-0 ml-2">
+        <span className="font-mono font-bold text-sm shrink-0 mt-0.5">
+          {(probability * 100).toFixed(0)}%
+        </span>
+        <span className="text-sm flex-1 line-clamp-2 break-words">{market.question}</span>
+        <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
           {formatVolume(market.volume24h)}
         </span>
       </a>
