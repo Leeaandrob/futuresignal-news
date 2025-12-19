@@ -24,9 +24,18 @@ function snakeToCamel(str: string): string {
 }
 
 // Field name mappings (API field -> Frontend field)
+// Note: Fields with numbers after underscore (e.g., volume_24h) need explicit mapping
+// because the snakeToCamel regex only matches letters after underscore
 const fieldMappings: Record<string, string> = {
   headline: "title",
   subheadline: "subtitle",
+  // Numeric suffix fields
+  volume_24h: "volume24h",
+  volume_1h: "volume1h",
+  volume_7d: "volume7d",
+  change_24h: "change24h",
+  change_1h: "change1h",
+  change_7d: "change7d",
 };
 
 function transformKeys(obj: any): any {
