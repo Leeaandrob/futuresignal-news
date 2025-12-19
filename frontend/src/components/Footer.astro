@@ -1,0 +1,26 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="border-t bg-muted/30">
+  <div class="container py-8">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+      <!-- Links -->
+      <nav class="flex items-center gap-6 text-sm text-muted-foreground">
+        <a href="/about" class="hover:text-foreground transition-colors">About</a>
+        <a href="/methodology" class="hover:text-foreground transition-colors">Methodology</a>
+        <a href="/rss.xml" class="hover:text-foreground transition-colors">RSS</a>
+        <a href="https://twitter.com/futuresignals" target="_blank" rel="noopener" class="hover:text-foreground transition-colors">Twitter</a>
+      </nav>
+
+      <!-- Disclaimer -->
+      <p class="text-xs text-muted-foreground text-center md:text-right max-w-md">
+        Data sourced from public prediction markets. Editorial analysis only. Not financial advice.
+      </p>
+    </div>
+
+    <div class="mt-6 pt-6 border-t text-center text-xs text-muted-foreground">
+      &copy; {currentYear} FutureSignals. All rights reserved.
+    </div>
+  </div>
+</footer>

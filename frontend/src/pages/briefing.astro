@@ -1,0 +1,38 @@
+---
+import Base from "@/layouts/Base.astro";
+import { Badge } from "@/components/ui/badge";
+import { BriefingFeed } from "@/components/BriefingFeed";
+import { formatFullDate } from "@/lib/utils";
+
+const today = formatFullDate(new Date());
+---
+
+<Base
+  title="Daily Briefing"
+  description="Your daily summary of prediction market movements and what they're pricing in."
+>
+  <article class="container py-8 max-w-3xl">
+    <!-- Header -->
+    <header class="mb-8 border-b pb-6">
+      <p class="text-sm text-muted-foreground uppercase tracking-wider mb-2">
+        Daily Briefing
+      </p>
+      <h1 class="headline-xl mb-3">{today}</h1>
+      <p class="body-lg text-muted-foreground">
+        Your daily summary of what prediction markets are pricing in across politics, crypto, tech, and more.
+      </p>
+    </header>
+
+    <!-- Dynamic Briefing Content -->
+    <BriefingFeed client:load />
+
+    <!-- Disclaimer -->
+    <footer class="border-t pt-6 mt-12 text-sm text-muted-foreground">
+      <p>
+        This briefing is generated from prediction market data and is for informational
+        purposes only. Not financial advice. Market probabilities reflect the collective
+        expectations of traders and may change rapidly.
+      </p>
+    </footer>
+  </article>
+</Base>

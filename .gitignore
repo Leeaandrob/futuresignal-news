@@ -1,0 +1,36 @@
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+/backend/build/
+/frontend/dist/
+/frontend/.astro/
+
+# Dependencies
+/backend/vendor/
+/frontend/node_modules/
+
+# Output data
+/data/
+/output/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage.out
+coverage.html
+
+# Temporary
+*.tmp
+*.temp

@@ -1,0 +1,64 @@
+---
+import Base from "@/layouts/Base.astro";
+---
+
+<Base title="About" description="Learn about FutureSignals and our mission to make prediction market data accessible.">
+  <article class="container py-8 max-w-3xl">
+    <h1 class="headline-xl mb-6">About FutureSignals</h1>
+
+    <div class="prose prose-lg max-w-none">
+      <p class="lead text-xl text-muted-foreground mb-8">
+        FutureSignals transforms raw prediction market data into actionable editorial narratives,
+        helping you understand what markets are actually pricing in.
+      </p>
+
+      <h2>What We Do</h2>
+      <p>
+        We monitor prediction markets 24/7, detecting significant probability shifts before they
+        become news. When we spot a signal — a market moving 7% or more with substantial volume —
+        we generate an editorial analysis explaining what changed, why it matters, and what to watch next.
+      </p>
+
+      <h2>Why Prediction Markets?</h2>
+      <p>
+        Prediction markets aggregate the collective intelligence of thousands of participants who
+        put real money behind their beliefs. Research shows they consistently outperform polls,
+        pundits, and traditional forecasting methods. They're not perfect, but they're often the
+        best real-time signal we have about future events.
+      </p>
+
+      <h2>Our Signal Detection</h2>
+      <p>
+        Not every market move is newsworthy. We focus on signals that meet specific criteria:
+      </p>
+      <ul>
+        <li><strong>Significant movement:</strong> At least 7% probability change</li>
+        <li><strong>Real volume:</strong> Minimum $50,000 in 24-hour trading</li>
+        <li><strong>Market relevance:</strong> Active markets with established liquidity</li>
+      </ul>
+
+      <h2>Categories</h2>
+      <p>We cover four main areas:</p>
+      <ul>
+        <li><strong>Politics:</strong> Elections, policy decisions, central bank actions</li>
+        <li><strong>Tech:</strong> AI developments, regulation, major company events</li>
+        <li><strong>Crypto:</strong> ETF approvals, protocol updates, market milestones</li>
+        <li><strong>Global:</strong> Geopolitical events, international affairs, conflicts</li>
+      </ul>
+
+      <h2>Editorial Independence</h2>
+      <p>
+        FutureSignals provides editorial analysis only. We don't offer financial advice,
+        we don't tell you what to trade, and we don't have positions in the markets we cover.
+        Our goal is to make prediction market data accessible and understandable.
+      </p>
+
+      <h2>Data Sources</h2>
+      <p>
+        Our primary data source is <a href="https://polymarket.com" target="_blank" rel="noopener">Polymarket</a>,
+        the leading prediction market platform. We access data through their public APIs and
+        process it in real-time to detect signals.
+      </p>
+    </div>
+  </article>
+</Base>

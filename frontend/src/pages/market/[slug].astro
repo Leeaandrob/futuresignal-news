@@ -1,0 +1,157 @@
+---
+import Base from "@/layouts/Base.astro";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ProbabilityBar, OutcomePrices } from "@/components/ProbabilityBar";
+import { ArticleCard, ArticleList } from "@/components/ArticleCard";
+import { getMarketBySlug, getMarkets, getArticlesByCategory } from "@/lib/api";
+import { formatFullDate, formatTimeAgo, formatVolume, getSignificance } from "@/lib/utils";
+
+export async function getStaticPaths() {
+  try {
+    const markets = await getMarkets(100);
+    // Filter out markets with invalid slugs (containing "/" or empty)
+    return markets
+      .filter((market) => market.slug && !market.slug.includes("/"))
+      .map((market) => ({
+        params: { slug: market.slug },
+      }));
+  } catch {
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+const market = await getMarketBySlug(slug!);
+
+if (!market) {
+  return Astro.redirect("/404");
+}
+
+// Try to get related articles
+let relatedArticles: any[] = [];
+try {
+  relatedArticles = await getArticlesByCategory(market.category, 5);
+} catch {}
+
+const change = market.change24h ?? 0;
+const probability = market.probability ?? 0;
+const category = market.category || "world";
+const outcomes = market.outcomes || [];
+const outcomePrices = market.outcomePrices || [];
+const isPositive = change >= 0;
+const significance = getSignificance(change);
+---
+
+<Base
+  title={market.question}
+  description={market.description || `Track ${market.question} on FutureSignals`}
+>
+  <div class="container py-8 max-w-4xl mx-auto">
+    <!-- Market Header -->
+    <header class="mb-8">
+      <div class="flex items-center gap-2 mb-4">
+        <Badge variant={category as any}>{category.toUpperCase()}</Badge>
+        {significance === "breaking" && (
+          <Badge variant="breaking">MOVING</Badge>
+        )}
+        {market.closed && (
+          <Badge variant="secondary">CLOSED</Badge>
+        )}
+      </div>
+
+      <h1 class="headline-xl mb-4">{market.question}</h1>
+
+      {market.description && (
+        <p class="text-lg text-muted-foreground mb-4">{market.description}</p>
+      )}
+
+      <div class="flex items-center gap-4 text-sm text-muted-foreground">
+        <span>Updated {formatTimeAgo(market.updatedAt)}</span>
+        {market.endDate && (
+          <>
+            <span>•</span>
+            <span>Ends {formatFullDate(market.endDate)}</span>
+          </>
+        )}
+      </div>
+    </header>
+
+    <!-- Main Probability Card -->
+    <Card class="mb-8">
+      <CardContent className="pt-6">
+        <ProbabilityBar
+          probability={probability}
+          previousProb={market.previousProb}
+          size="lg"
+        />
+
+        {outcomes.length > 2 && (
+          <div class="mt-6 pt-6 border-t">
+            <h3 class="font-semibold mb-3">All Outcomes</h3>
+            <OutcomePrices
+              outcomes={outcomes}
+              prices={outcomePrices}
+              size="md"
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+
+    <!-- Stats Grid -->
+    <div class="grid gap-4 md:grid-cols-3 mb-8">
+      <Card>
+        <CardContent className="pt-4">
+          <div class="text-sm text-muted-foreground mb-1">24h Volume</div>
+          <div class="text-2xl font-bold font-mono">{formatVolume(market.volume24h)}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-4">
+          <div class="text-sm text-muted-foreground mb-1">Total Volume</div>
+          <div class="text-2xl font-bold font-mono">{formatVolume(market.totalVolume)}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-4">
+          <div class="text-sm text-muted-foreground mb-1">Liquidity</div>
+          <div class="text-2xl font-bold font-mono">{formatVolume(market.liquidity)}</div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Trade on Polymarket -->
+    <div class="mb-8">
+      <a
+        href={market.polymarketUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 px-6 py-3 bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors"
+      >
+        Trade on Polymarket
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+    </div>
+
+    <!-- Related Articles -->
+    {relatedArticles.length > 0 && (
+      <section class="mt-12 pt-8 border-t">
+        <h2 class="headline-md mb-6">Related Stories</h2>
+        <ArticleList articles={relatedArticles} />
+      </section>
+    )}
+
+    <!-- Navigation -->
+    <nav class="mt-12 pt-8 border-t flex items-center justify-between">
+      <a href="/" class="text-brand hover:underline">
+        ← Back to FutureSignals
+      </a>
+      <a href={`/category/${category}`} class="text-brand hover:underline">
+        More {category} markets →
+      </a>
+    </nav>
+  </div>
+</Base>

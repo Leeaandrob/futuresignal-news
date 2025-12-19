@@ -1,0 +1,47 @@
+---
+import Base from "@/layouts/Base.astro";
+import { HomeFeed } from "@/components/HomeFeed";
+import { Badge } from "@/components/ui/badge";
+import { DEFAULT_CATEGORIES } from "@/lib/types";
+
+const today = new Date().toLocaleDateString("en-US", {
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+// Static categories for the browse section
+const staticCategories = DEFAULT_CATEGORIES.filter(c => !c.dynamic);
+---
+
+<Base
+  title="Home"
+  description="Real-time analysis and signals from prediction markets. Get the latest insights on politics, crypto, tech, sports and more."
+>
+  <div class="container py-8">
+    <!-- Live Feed -->
+    <HomeFeed client:load />
+
+    <!-- Static fallback / categories section -->
+    <noscript>
+      <section class="py-12">
+        <h2 class="headline-md mb-6">Browse by Category</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {staticCategories.map((category) => (
+            <a
+              href={`/category/${category.slug}`}
+              class="p-6 border rounded-lg hover:shadow-md transition-all text-center"
+              style={`border-color: ${category.color}20; background: ${category.color}05;`}
+            >
+              <Badge variant={category.slug as any} className="mb-2">
+                {category.name.toUpperCase()}
+              </Badge>
+              <p class="text-sm text-muted-foreground">{category.description}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    </noscript>
+  </div>
+</Base>

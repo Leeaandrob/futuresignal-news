@@ -1,0 +1,285 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --primary: 210 100% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 354 70% 54%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 210 100% 40%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* =============================================================================
+   TYPOGRAPHY
+============================================================================= */
+
+.headline-xl {
+  @apply text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight;
+}
+
+.headline-lg {
+  @apply text-2xl md:text-3xl font-bold tracking-tight;
+}
+
+.headline-md {
+  @apply text-xl md:text-2xl font-semibold;
+}
+
+.body-lg {
+  @apply text-lg leading-relaxed;
+}
+
+.body-md {
+  @apply text-base leading-relaxed;
+}
+
+.label {
+  @apply text-xs font-semibold uppercase tracking-wider;
+}
+
+.mono {
+  @apply font-mono;
+}
+
+/* =============================================================================
+   ANIMATIONS
+============================================================================= */
+
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-live {
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* =============================================================================
+   CATEGORY BADGE VARIANTS (Static classes for Tailwind)
+============================================================================= */
+
+.badge-politics { @apply bg-politics/10 text-politics border-politics/20; }
+.badge-elections { @apply bg-elections/10 text-elections border-elections/20; }
+.badge-crypto { @apply bg-crypto/10 text-crypto border-crypto/20; }
+.badge-finance { @apply bg-finance/10 text-finance border-finance/20; }
+.badge-economy { @apply bg-economy/10 text-economy border-economy/20; }
+.badge-earnings { @apply bg-earnings/10 text-earnings border-earnings/20; }
+.badge-tech { @apply bg-tech/10 text-tech border-tech/20; }
+.badge-sports { @apply bg-sports/10 text-sports border-sports/20; }
+.badge-geopolitics { @apply bg-geopolitics/10 text-geopolitics border-geopolitics/20; }
+.badge-world { @apply bg-world/10 text-world border-world/20; }
+.badge-culture { @apply bg-culture/10 text-culture border-culture/20; }
+.badge-global { @apply bg-global/10 text-global border-global/20; }
+.badge-trending { @apply bg-trending/10 text-trending border-trending/20; }
+.badge-breaking { @apply bg-breaking/10 text-breaking border-breaking/20 animate-pulse; }
+.badge-new { @apply bg-new/10 text-new border-new/20; }
+.badge-default { @apply bg-muted text-muted-foreground; }
+
+/* =============================================================================
+   SIGNAL CHANGE INDICATORS
+============================================================================= */
+
+.change-positive {
+  @apply text-bullish;
+}
+
+.change-negative {
+  @apply text-bearish;
+}
+
+.change-neutral {
+  @apply text-muted-foreground;
+}
+
+/* =============================================================================
+   CARD HOVER EFFECTS
+============================================================================= */
+
+.card-hover {
+  @apply transition-all duration-200;
+}
+
+.card-hover:hover {
+  @apply shadow-md border-brand/30;
+}
+
+/* =============================================================================
+   PROBABILITY BAR
+============================================================================= */
+
+.prob-bar {
+  @apply h-3 rounded-full overflow-hidden bg-muted;
+}
+
+.prob-bar-fill {
+  @apply h-full rounded-full transition-all duration-500;
+}
+
+.prob-bar-fill.high {
+  @apply bg-bullish;
+}
+
+.prob-bar-fill.medium {
+  @apply bg-brand;
+}
+
+.prob-bar-fill.low {
+  @apply bg-bearish;
+}
+
+/* =============================================================================
+   PROSE / ARTICLE CONTENT
+============================================================================= */
+
+.prose {
+  @apply text-foreground;
+}
+
+.prose h2 {
+  @apply text-xl font-bold mt-8 mb-4 text-foreground;
+}
+
+.prose h3 {
+  @apply text-lg font-semibold mt-6 mb-3 text-foreground;
+}
+
+.prose p {
+  @apply mb-4 leading-relaxed text-muted-foreground;
+}
+
+.prose ul {
+  @apply mb-4 pl-5 space-y-2;
+}
+
+.prose li {
+  @apply text-muted-foreground;
+}
+
+.prose a {
+  @apply text-brand hover:underline;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-brand pl-4 italic text-muted-foreground my-4;
+}
+
+/* =============================================================================
+   SCROLLBAR STYLING
+============================================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* =============================================================================
+   MOBILE OPTIMIZATIONS
+============================================================================= */
+
+@media (max-width: 640px) {
+  .container {
+    @apply px-4;
+  }
+
+  .headline-xl {
+    @apply text-2xl;
+  }
+
+  .headline-lg {
+    @apply text-xl;
+  }
+}
+
+/* =============================================================================
+   LINE CLAMPING
+============================================================================= */
+
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}

@@ -1,0 +1,62 @@
+---
+import Base from "@/layouts/Base.astro";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CategoryFeed } from "@/components/CategoryFeed";
+import { DEFAULT_CATEGORIES, type Category } from "@/lib/types";
+import { getCategoryColor } from "@/lib/utils";
+
+export function getStaticPaths() {
+  // All category slugs
+  const categories = [
+    { slug: "trending", name: "Trending", description: "Hot markets right now", dynamic: true },
+    { slug: "breaking", name: "Breaking", description: "Big moves happening now", dynamic: true },
+    { slug: "new", name: "New", description: "Recently opened markets", dynamic: true },
+    { slug: "politics", name: "Politics", description: "Elections, policy, governance", dynamic: false },
+    { slug: "elections", name: "Elections", description: "US and global elections", dynamic: false },
+    { slug: "crypto", name: "Crypto", description: "Bitcoin, Ethereum, DeFi", dynamic: false },
+    { slug: "finance", name: "Finance", description: "Markets, rates, economy", dynamic: false },
+    { slug: "economy", name: "Economy", description: "Economic indicators and policy", dynamic: false },
+    { slug: "earnings", name: "Earnings", description: "Company earnings and guidance", dynamic: false },
+    { slug: "tech", name: "Tech", description: "AI, companies, innovation", dynamic: false },
+    { slug: "sports", name: "Sports", description: "Games, championships, athletes", dynamic: false },
+    { slug: "geopolitics", name: "Geopolitics", description: "International relations and conflicts", dynamic: false },
+    { slug: "world", name: "World", description: "Global events and news", dynamic: false },
+    { slug: "culture", name: "Culture", description: "Entertainment, media, society", dynamic: false },
+  ];
+
+  return categories.map((category) => ({
+    params: { slug: category.slug },
+    props: { category }
+  }));
+}
+
+const { category } = Astro.props;
+const categoryColor = getCategoryColor(category.slug);
+const isDynamic = category.dynamic;
+---
+
+<Base title={category.name} description={category.description}>
+  <div class="container py-8">
+    <!-- Category Header -->
+    <header class="mb-8">
+      <div class="flex items-center gap-3 mb-4">
+        {isDynamic && (
+          <span
+            class="w-3 h-3 rounded-full animate-pulse"
+            style={`background-color: ${categoryColor}`}
+          />
+        )}
+        <Badge variant={category.slug as any} className="text-sm px-3 py-1">
+          {category.name.toUpperCase()}
+        </Badge>
+      </div>
+
+      <h1 class="headline-xl mb-4">{category.name}</h1>
+      <p class="text-lg text-muted-foreground max-w-2xl">{category.description}</p>
+    </header>
+
+    <!-- Dynamic Feed Component -->
+    <CategoryFeed client:load category={category.slug} isDynamic={isDynamic} />
+  </div>
+</Base>

@@ -1,0 +1,186 @@
+---
+import Base from "@/layouts/Base.astro";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { MarketCard } from "@/components/MarketCard";
+import { ProbabilityBar } from "@/components/ProbabilityBar";
+import { getArticleBySlug, getArticles } from "@/lib/api";
+import { getArticleTypeBadge, type Article } from "@/lib/types";
+import { formatFullDate, formatTimeAgo, getArticleUrl } from "@/lib/utils";
+
+export async function getStaticPaths() {
+  // At build time, fetch recent articles to pre-render
+  try {
+    const articles = await getArticles(50);
+    return articles.map((article) => ({
+      params: { slug: article.slug },
+    }));
+  } catch {
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+const article = await getArticleBySlug(slug!);
+
+if (!article) {
+  return Astro.redirect("/404");
+}
+
+const typeBadge = getArticleTypeBadge(article.type);
+const publishedDate = formatFullDate(article.publishedAt);
+const hasMarkets = article.markets && article.markets.length > 0;
+---
+
+<Base
+  title={article.title}
+  description={article.summary}
+>
+  <article class="container py-8 max-w-4xl mx-auto">
+    <!-- Article Header -->
+    <header class="mb-8">
+      <div class="flex items-center gap-2 mb-4">
+        <Badge variant={typeBadge.variant as any}>{typeBadge.label}</Badge>
+        <Badge variant={article.category as any}>{article.category.toUpperCase()}</Badge>
+        {article.featured && (
+          <Badge variant="default">FEATURED</Badge>
+        )}
+      </div>
+
+      <h1 class="headline-xl mb-4">{article.title}</h1>
+
+      {article.subtitle && (
+        <p class="text-xl text-muted-foreground mb-4">{article.subtitle}</p>
+      )}
+
+      <div class="flex items-center gap-4 text-sm text-muted-foreground">
+        <time datetime={article.publishedAt}>{publishedDate}</time>
+        <span>•</span>
+        <span>{formatTimeAgo(article.publishedAt)}</span>
+        {article.views > 0 && (
+          <>
+            <span>•</span>
+            <span>{article.views} views</span>
+          </>
+        )}
+      </div>
+    </header>
+
+    <!-- Market Cards (if any) -->
+    {hasMarkets && (
+      <section class="mb-8">
+        <div class="grid gap-4 md:grid-cols-2">
+          {article.markets.slice(0, 2).map((market) => (
+            <MarketCard market={market} variant="detailed" showCategory={false} />
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Article Body -->
+    <div class="prose prose-lg max-w-none">
+      {/* Summary/Lede */}
+      <p class="text-lg font-medium text-foreground leading-relaxed mb-8">
+        {article.summary}
+      </p>
+
+      {/* What Happened */}
+      {article.body?.whatHappened && (
+        <section class="mb-8">
+          <h2 class="text-xl font-bold mb-3 text-foreground">What Happened</h2>
+          <p class="text-muted-foreground leading-relaxed">{article.body.whatHappened}</p>
+        </section>
+      )}
+
+      {/* Why It Matters */}
+      {article.body?.whyItMatters && (
+        <section class="mb-8 p-6 bg-brand/5 border-l-4 border-brand rounded-r-lg">
+          <h2 class="text-xl font-bold mb-3 text-foreground">Why It Matters</h2>
+          <p class="text-muted-foreground leading-relaxed">{article.body.whyItMatters}</p>
+        </section>
+      )}
+
+      {/* Context */}
+      {article.body?.context && article.body.context.length > 0 && (
+        <section class="mb-8">
+          <h2 class="text-xl font-bold mb-3 text-foreground">Context</h2>
+          <ul class="space-y-2">
+            {article.body.context.map((point) => (
+              <li class="flex items-start gap-2 text-muted-foreground">
+                <span class="text-brand mt-1">•</span>
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* What to Watch */}
+      {article.body?.whatToWatch && (
+        <section class="mb-8 p-6 bg-muted rounded-lg">
+          <h2 class="text-xl font-bold mb-3 text-foreground">What to Watch</h2>
+          <p class="text-muted-foreground leading-relaxed">{article.body.whatToWatch}</p>
+        </section>
+      )}
+    </div>
+
+    {/* Additional Markets */}
+    {hasMarkets && article.markets.length > 2 && (
+      <section class="mt-12 pt-8 border-t">
+        <h2 class="headline-md mb-6">Related Markets</h2>
+        <div class="grid gap-4 md:grid-cols-3">
+          {article.markets.slice(2).map((market) => (
+            <MarketCard market={market} variant="default" />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* Tags */}
+    {article.tags && article.tags.length > 0 && (
+      <section class="mt-8 pt-6 border-t">
+        <div class="flex flex-wrap gap-2">
+          {article.tags.map((tag) => (
+            <Badge variant="secondary" className="text-xs">#{tag}</Badge>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* Related Articles */}
+    {article.relatedArticles && article.relatedArticles.length > 0 && (
+      <section class="mt-12 pt-8 border-t">
+        <h2 class="headline-md mb-6">Related Stories</h2>
+        <div class="grid gap-4">
+          {article.relatedArticles.map((related) => (
+            <a
+              href={getArticleUrl(related.slug)}
+              class="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <Badge variant={getArticleTypeBadge(related.type).variant as any} className="shrink-0">
+                {getArticleTypeBadge(related.type).label}
+              </Badge>
+              <span class="font-medium">{related.title}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* Enrichment Sources */}
+    {article.enrichmentSources && article.enrichmentSources.length > 0 && (
+      <section class="mt-8 pt-6 border-t">
+        <p class="text-xs text-muted-foreground">
+          Sources: {article.enrichmentSources.join(", ")}
+        </p>
+      </section>
+    )}
+
+    <!-- Back to Home -->
+    <nav class="mt-12 pt-8 border-t">
+      <a href="/" class="text-brand hover:underline">
+        ← Back to FutureSignals
+      </a>
+    </nav>
+  </article>
+</Base>

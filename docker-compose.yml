@@ -1,0 +1,81 @@
+# FutureSignals - Docker Compose Configuration
+# Usage: docker compose up -d
+
+services:
+  # ==========================================================================
+  # MongoDB - Signal Storage
+  # ==========================================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: futuresignals-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=futuresignals
+      - MONGO_INITDB_ROOT_PASSWORD=futuresignals123
+      - MONGO_INITDB_DATABASE=futuresignals
+    volumes:
+      - mongodb-data:/data/db
+    ports:
+      - "27019:27017"
+    networks:
+      - futuresignals
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # Backend - Signal Detection & Narrative Generation
+  # ==========================================================================
+  signald:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: futuresignals-signald
+    restart: unless-stopped
+    environment:
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      - DASHSCOPE_ENDPOINT=${DASHSCOPE_ENDPOINT:-https://dashscope-intl.aliyuncs.com/compatible-mode/v1}
+      - QWEN_MODEL=${QWEN_MODEL:-qwen-plus}
+      - MONGO_URI=mongodb://futuresignals:futuresignals123@mongodb:27017
+      - MONGO_DB=futuresignals
+      - MIN_PROBABILITY_CHANGE=${MIN_PROBABILITY_CHANGE:-0.07}
+      - MIN_VOLUME_24H=${MIN_VOLUME_24H:-50000}
+      - POLL_INTERVAL=${POLL_INTERVAL:-5m}
+      - HTTP_ADDR=:8080
+      - DEBUG=${DEBUG:-false}
+    ports:
+      - "8080:8080"
+    networks:
+      - futuresignals
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  # ==========================================================================
+  # Mongo Express - Database Admin UI (optional)
+  # ==========================================================================
+  mongo-express:
+    image: mongo-express:latest
+    container_name: futuresignals-mongo-express
+    restart: unless-stopped
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=futuresignals
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=futuresignals123
+      - ME_CONFIG_MONGODB_URL=mongodb://futuresignals:futuresignals123@mongodb:27017/
+      - ME_CONFIG_BASICAUTH=false
+    ports:
+      - "8083:8081"
+    networks:
+      - futuresignals
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+networks:
+  futuresignals:
+    driver: bridge
+
+volumes:
+  mongodb-data:
