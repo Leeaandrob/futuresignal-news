@@ -32,8 +32,8 @@ func main() {
 
 	log.Info().Msg("Starting Polymarket URL backfill")
 
-	// Connect to MongoDB
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Connect to MongoDB with longer timeout for backfill operations
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))

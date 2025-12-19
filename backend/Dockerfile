@@ -16,8 +16,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the binary
+# Build the binaries
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o futuresignals ./cmd/futuresignals
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o backfill ./cmd/backfill
 
 # Runtime stage
 FROM alpine:3.19
@@ -27,8 +28,9 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apk add --no-cache ca-certificates tzdata
 
-# Copy binary from builder
+# Copy binaries from builder
 COPY --from=builder /build/futuresignals /app/futuresignals
+COPY --from=builder /build/backfill /app/backfill
 
 # Non-root user for security
 RUN adduser -D -g '' appuser
