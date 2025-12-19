@@ -92,11 +92,13 @@ type Market struct {
 	ConditionID           string          `json:"conditionId"`
 	Slug                  string          `json:"slug"`
 	EndDate               string          `json:"endDate"`
+	StartDate             string          `json:"startDate"`
 	Description           string          `json:"description"`
 	Outcomes              JSONStringArray `json:"outcomes"`
 	OutcomePrices         JSONStringArray `json:"outcomePrices"`
 	Volume                string          `json:"volume"`
 	Volume24hr            float64         `json:"volume24hr"`
+	Volume1wk             float64         `json:"volume1wk"`
 	Liquidity             string          `json:"liquidity"`
 	Active                bool            `json:"active"`
 	Closed                bool            `json:"closed"`
@@ -114,6 +116,14 @@ type Market struct {
 	CreatedAt             time.Time       `json:"-"`
 	UpdatedAt             time.Time       `json:"-"`
 
+	// New fields for richer content
+	Image                 string          `json:"image"`
+	Icon                  string          `json:"icon"`
+	LastTradePrice        float64         `json:"lastTradePrice"`
+	OneDayPriceChange     float64         `json:"oneDayPriceChange"`
+	OneWeekPriceChange    float64         `json:"oneWeekPriceChange"`
+	ResolutionSource      string          `json:"resolutionSource"`
+
 	// Computed fields
 	YesPrice              float64         `json:"-"`
 	NoPrice               float64         `json:"-"`
@@ -121,25 +131,28 @@ type Market struct {
 
 // Event represents a group of related markets.
 type Event struct {
-	ID              string    `json:"id"`
-	Title           string    `json:"title"`
-	Slug            string    `json:"slug"`
-	Description     string    `json:"description"`
-	StartDate       string    `json:"startDate"`
-	EndDate         string    `json:"endDate"`
-	Image           string    `json:"image"`
-	Icon            string    `json:"icon"`
-	Active          bool      `json:"active"`
-	Closed          bool      `json:"closed"`
-	Archived        bool      `json:"archived"`
-	Liquidity       float64   `json:"liquidity"`
-	Volume          float64   `json:"volume"`
-	Volume24hr      float64   `json:"volume24hr"`
-	Markets         []Market  `json:"markets"`
-	CompetitorCount int       `json:"competitorCount"`
-	CommentCount    int       `json:"commentCount"`
-	Tags            []Tag     `json:"tags"`
-	CreatedAt       time.Time `json:"-"`
+	ID               string    `json:"id"`
+	Title            string    `json:"title"`
+	Slug             string    `json:"slug"`
+	Description      string    `json:"description"`
+	StartDate        string    `json:"startDate"`
+	EndDate          string    `json:"endDate"`
+	Image            string    `json:"image"`
+	Icon             string    `json:"icon"`
+	Active           bool      `json:"active"`
+	Closed           bool      `json:"closed"`
+	Archived         bool      `json:"archived"`
+	Liquidity        float64   `json:"liquidity"`
+	Volume           float64   `json:"volume"`
+	Volume24hr       float64   `json:"volume24hr"`
+	Volume1wk        float64   `json:"volume1wk"`
+	Markets          []Market  `json:"markets"`
+	CompetitorCount  int       `json:"competitorCount"`
+	CommentCount     int       `json:"commentCount"`
+	Tags             []Tag     `json:"tags"`
+	SeriesSlug       string    `json:"seriesSlug"`
+	ResolutionSource string    `json:"resolutionSource"`
+	CreatedAt        time.Time `json:"-"`
 }
 
 // Tag represents a category tag.

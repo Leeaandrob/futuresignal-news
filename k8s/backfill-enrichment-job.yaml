@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backfill-enrichment
+  namespace: futuresignals
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      containers:
+      - name: backfill
+        image: ghcr.io/leeaandrob/futuresignal-news/backend:latest
+        command: ["/app/backfill-enrichment"]
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: futuresignals-secrets
+              key: mongo-uri
+        - name: MONGODB_DATABASE
+          value: "futuresignals"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: ghcr-secret
+  backoffLimit: 1

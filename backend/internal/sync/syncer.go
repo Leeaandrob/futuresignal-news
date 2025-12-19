@@ -406,27 +406,78 @@ func (s *Syncer) convertMarketWithEvent(pm polymarket.Market, event polymarket.E
 		}
 	}
 
+	// Convert Polymarket tags to our model
+	var polymarketTags []models.PolymarketTag
+	for _, tag := range event.Tags {
+		polymarketTags = append(polymarketTags, models.PolymarketTag{
+			Label: tag.Label,
+			Slug:  tag.Slug,
+		})
+	}
+
+	// Use market image if available, otherwise use event image
+	image := pm.Image
+	if image == "" {
+		image = event.Image
+	}
+	icon := pm.Icon
+	if icon == "" {
+		icon = event.Icon
+	}
+
 	market := &models.Market{
+		// Identifiers
 		MarketID:       pm.ID,
 		ConditionID:    pm.ConditionID,
 		GroupItemTitle: pm.GroupItemTitle,
-		Question:       pm.Question,
-		Description:    pm.Description,
+
+		// Content
+		Question:    pm.Question,
+		Description: pm.Description,
+		Image:       image,
+		Icon:        icon,
+
+		// Pricing
 		Probability:    pm.YesPrice,
+		LastTradePrice: pm.LastTradePrice,
+		Change24h:      pm.OneDayPriceChange,
+		Change7d:       pm.OneWeekPriceChange,
+
+		// Volume
 		Volume24h:      pm.Volume24hr,
+		Volume7d:       pm.Volume1wk,
 		TotalVolume:    pm.VolumeNum,
 		EventVolume:    event.Volume,
 		EventVolume24h: event.Volume24hr,
-		Liquidity:      pm.LiquidityNum,
-		Active:         pm.Active,
-		Closed:         pm.Closed,
-		Archived:       false,
-		AcceptingBid:   pm.AcceptingOrders,
-		EndDate:        pm.EndDate,
-		Outcomes:       []string(pm.Outcomes),
-		OutcomePrices:  outcomePrices,
-		UpdatedAt:      time.Now(),
-		PolymarketURL:  "https://polymarket.com/event/" + event.Slug,
+
+		// Event data
+		EventTitle:   event.Title,
+		CommentCount: event.CommentCount,
+		SeriesSlug:   event.SeriesSlug,
+
+		// Classification
+		PolymarketTags: polymarketTags,
+
+		// Liquidity & Status
+		Liquidity:    pm.LiquidityNum,
+		Active:       pm.Active,
+		Closed:       pm.Closed,
+		Archived:     false,
+		AcceptingBid: pm.AcceptingOrders,
+		StartDate:    pm.StartDate,
+		EndDate:      pm.EndDate,
+
+		// Resolution
+		ResolutionSource: pm.ResolutionSource,
+		CompetitorCount:  event.CompetitorCount,
+
+		// Outcomes
+		Outcomes:      []string(pm.Outcomes),
+		OutcomePrices: outcomePrices,
+
+		// Meta
+		UpdatedAt:     time.Now(),
+		PolymarketURL: "https://polymarket.com/event/" + event.Slug,
 	}
 
 	// Detect category

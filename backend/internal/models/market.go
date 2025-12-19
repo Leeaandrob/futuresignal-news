@@ -7,6 +7,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// PolymarketTag represents a tag from Polymarket.
+type PolymarketTag struct {
+	Label string `bson:"label" json:"label"`
+	Slug  string `bson:"slug" json:"slug"`
+}
+
 // Market represents a prediction market from Polymarket.
 type Market struct {
 	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
@@ -21,16 +27,22 @@ type Market struct {
 	Question    string `bson:"question" json:"question"`
 	Description string `bson:"description,omitempty" json:"description,omitempty"`
 
+	// Media (from Polymarket)
+	Image string `bson:"image,omitempty" json:"image,omitempty"`
+	Icon  string `bson:"icon,omitempty" json:"icon,omitempty"`
+
 	// Classification
-	Category string   `bson:"category" json:"category"`
-	Tags     []string `bson:"tags" json:"tags"`
+	Category       string          `bson:"category" json:"category"`
+	Tags           []string        `bson:"tags" json:"tags"`                                           // Our detected tags
+	PolymarketTags []PolymarketTag `bson:"polymarket_tags,omitempty" json:"polymarket_tags,omitempty"` // Tags from Polymarket
 
 	// Market data
-	Probability  float64 `bson:"probability" json:"probability"` // Current yes price
-	PreviousProb float64 `bson:"previous_prob" json:"previous_prob"`
-	Change1h     float64 `bson:"change_1h" json:"change_1h"`
-	Change24h    float64 `bson:"change_24h" json:"change_24h"`
-	Change7d     float64 `bson:"change_7d" json:"change_7d"`
+	Probability    float64 `bson:"probability" json:"probability"` // Current yes price
+	PreviousProb   float64 `bson:"previous_prob" json:"previous_prob"`
+	LastTradePrice float64 `bson:"last_trade_price,omitempty" json:"last_trade_price,omitempty"`
+	Change1h       float64 `bson:"change_1h" json:"change_1h"`
+	Change24h      float64 `bson:"change_24h" json:"change_24h"`
+	Change7d       float64 `bson:"change_7d" json:"change_7d"`
 
 	// Volume
 	Volume1h    float64 `bson:"volume_1h" json:"volume_1h"`
@@ -38,9 +50,12 @@ type Market struct {
 	Volume7d    float64 `bson:"volume_7d" json:"volume_7d"`
 	TotalVolume float64 `bson:"total_volume" json:"total_volume"`
 
-	// Event-level volume (for multi-outcome markets)
-	EventVolume   float64 `bson:"event_volume,omitempty" json:"event_volume,omitempty"`
+	// Event-level data (for multi-outcome markets)
+	EventVolume    float64 `bson:"event_volume,omitempty" json:"event_volume,omitempty"`
 	EventVolume24h float64 `bson:"event_volume_24h,omitempty" json:"event_volume_24h,omitempty"`
+	EventTitle     string  `bson:"event_title,omitempty" json:"event_title,omitempty"`
+	CommentCount   int     `bson:"comment_count,omitempty" json:"comment_count,omitempty"`
+	SeriesSlug     string  `bson:"series_slug,omitempty" json:"series_slug,omitempty"`
 
 	// Liquidity
 	Liquidity float64 `bson:"liquidity" json:"liquidity"`
@@ -50,7 +65,12 @@ type Market struct {
 	Closed       bool   `bson:"closed" json:"closed"`
 	Archived     bool   `bson:"archived" json:"archived"`
 	AcceptingBid bool   `bson:"accepting_bid" json:"accepting_bid"`
+	StartDate    string `bson:"start_date,omitempty" json:"start_date,omitempty"`
 	EndDate      string `bson:"end_date,omitempty" json:"end_date,omitempty"`
+
+	// Resolution
+	ResolutionSource string `bson:"resolution_source,omitempty" json:"resolution_source,omitempty"`
+	CompetitorCount  int    `bson:"competitor_count,omitempty" json:"competitor_count,omitempty"`
 
 	// Outcomes (for multi-outcome markets)
 	Outcomes      []string  `bson:"outcomes" json:"outcomes"`
