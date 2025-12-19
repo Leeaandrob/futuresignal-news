@@ -3,4 +3,4 @@ compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
 
 [vars]
-PUBLIC_API_URL = "https://api.futuresignals.io"
+PUBLIC_API_URL = "https://api.futuresignals.news"
