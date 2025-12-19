@@ -198,31 +198,127 @@ func (s *Syncer) syncLoop() {
 func (s *Syncer) syncMarkets() {
 	log.Debug().Msg("Syncing markets")
 
-	// Fetch top markets by volume
-	pmMarkets, err := s.client.GetTopMarketsByVolume(s.ctx, 200)
+	// Fetch top events by volume to get correct event slugs for URLs
+	active := true
+	closed := false
+	events, err := s.client.GetEvents(s.ctx, polymarket.EventFilters{
+		Active:    &active,
+		Closed:    &closed,
+		Limit:     100,
+		Order:     "volume24hr",
+		Ascending: false,
+	})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to fetch markets")
+		log.Error().Err(err).Msg("Failed to fetch events")
 		return
 	}
 
-	log.Debug().Int("count", len(pmMarkets)).Msg("Fetched markets from Polymarket")
+	log.Debug().Int("count", len(events)).Msg("Fetched events from Polymarket")
 
-	for _, pm := range pmMarkets {
-		s.processMarket(pm)
+	// Process all markets from events with correct event slugs
+	for _, event := range events {
+		for _, pm := range event.Markets {
+			s.processMarketWithEventSlug(pm, event.Slug)
+		}
 	}
 
 	// Update trending scores
 	s.updateTrendingScores()
 }
 
-// processMarket processes a single market update.
+// processMarketWithEventSlug processes a single market update with the correct event slug for URL.
+func (s *Syncer) processMarketWithEventSlug(pm polymarket.Market, eventSlug string) {
+	// Skip low volume markets
+	if pm.Volume24hr < s.config.MinVolume24h {
+		return
+	}
+
+	// Convert to our model with correct event slug
+	market := s.convertMarketWithEventSlug(pm, eventSlug)
+
+	// Check cache for existing market
+	s.cacheMux.RLock()
+	existing, exists := s.marketCache[market.MarketID]
+	s.cacheMux.RUnlock()
+
+	if !exists {
+		// New market detected
+		market.FirstSeenAt = time.Now()
+		s.emitEvent(Event{
+			Type:      EventNewMarket,
+			Market:    market,
+			Timestamp: time.Now(),
+		})
+	} else {
+		// Calculate changes
+		market.FirstSeenAt = existing.FirstSeenAt
+		market.PreviousProb = existing.Probability
+		market.Change24h = market.Probability - existing.Probability
+
+		// Check for breaking move
+		if abs(market.Change24h) >= s.config.BreakingThreshold {
+			s.emitEvent(Event{
+				Type:      EventBreakingMove,
+				Market:    market,
+				Timestamp: time.Now(),
+				Metadata: map[string]interface{}{
+					"change":       market.Change24h,
+					"previous":     existing.Probability,
+					"current":      market.Probability,
+				},
+			})
+		}
+
+		// Check for volume spike
+		if existing.Volume24h > 0 && market.Volume24h/existing.Volume24h >= s.config.VolumeMultiplier {
+			s.emitEvent(Event{
+				Type:      EventVolumeSpike,
+				Market:    market,
+				Timestamp: time.Now(),
+				Metadata: map[string]interface{}{
+					"previous_volume": existing.Volume24h,
+					"current_volume":  market.Volume24h,
+					"multiplier":      market.Volume24h / existing.Volume24h,
+				},
+			})
+		}
+
+		// Check for threshold crossings (50%, 75%, 90%)
+		thresholds := []float64{0.50, 0.75, 0.90}
+		for _, t := range thresholds {
+			if crossedThreshold(existing.Probability, market.Probability, t) {
+				s.emitEvent(Event{
+					Type:      EventThresholdCross,
+					Market:    market,
+					Timestamp: time.Now(),
+					Metadata: map[string]interface{}{
+						"threshold": t,
+						"direction": directionString(existing.Probability, market.Probability),
+					},
+				})
+			}
+		}
+	}
+
+	// Update cache
+	s.cacheMux.Lock()
+	s.marketCache[market.MarketID] = market
+	s.cacheMux.Unlock()
+
+	// Save to database
+	if err := s.store.UpsertMarket(s.ctx, market); err != nil {
+		log.Error().Err(err).Str("market_id", market.MarketID).Msg("Failed to save market")
+	}
+}
+
+// processMarket processes a single market update (legacy, without event slug).
 func (s *Syncer) processMarket(pm polymarket.Market) {
 	// Skip low volume markets
 	if pm.Volume24hr < s.config.MinVolume24h {
 		return
 	}
 
-	// Convert to our model
+	// Convert to our model (uses market slug as fallback)
 	market := s.convertMarket(pm)
 
 	// Check cache for existing market
@@ -300,7 +396,50 @@ func (s *Syncer) processMarket(pm polymarket.Market) {
 	}
 }
 
-// convertMarket converts a Polymarket market to our model.
+// convertMarketWithEventSlug converts a Polymarket market to our model with the correct event slug.
+func (s *Syncer) convertMarketWithEventSlug(pm polymarket.Market, eventSlug string) *models.Market {
+	// Convert outcome prices from strings to floats
+	var outcomePrices []float64
+	for _, p := range pm.OutcomePrices {
+		if f, err := parseFloat(p); err == nil {
+			outcomePrices = append(outcomePrices, f)
+		}
+	}
+
+	market := &models.Market{
+		MarketID:       pm.ID,
+		ConditionID:    pm.ConditionID,
+		GroupItemTitle: pm.GroupItemTitle,
+		Question:       pm.Question,
+		Description:    pm.Description,
+		Probability:    pm.YesPrice,
+		Volume24h:      pm.Volume24hr,
+		TotalVolume:    pm.VolumeNum,
+		Liquidity:      pm.LiquidityNum,
+		Active:         pm.Active,
+		Closed:         pm.Closed,
+		Archived:       false,
+		AcceptingBid:   pm.AcceptingOrders,
+		EndDate:        pm.EndDate,
+		Outcomes:       []string(pm.Outcomes),
+		OutcomePrices:  outcomePrices,
+		UpdatedAt:      time.Now(),
+		PolymarketURL:  "https://polymarket.com/event/" + eventSlug,
+	}
+
+	// Detect category
+	market.Category = market.DetectCategory()
+
+	// Generate slug
+	market.Slug = market.GenerateSlug()
+
+	// Calculate trending score
+	market.TrendingScore = market.CalculateTrendingScore()
+
+	return market
+}
+
+// convertMarket converts a Polymarket market to our model (legacy, uses market slug as fallback).
 func (s *Syncer) convertMarket(pm polymarket.Market) *models.Market {
 	// Convert outcome prices from strings to floats
 	var outcomePrices []float64
