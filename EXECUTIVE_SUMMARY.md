@@ -1,27 +1,37 @@
-# MarketPulse - Executive Summary
+# FutureSignals - Executive Summary
 
-## Proposta de Valor
+## Status: LIVE
 
-**MarketPulse** é uma plataforma editorial que transforma sinais de mercados de previsão em narrativas jornalísticas acessíveis, posicionando-se como a "Bloomberg dos sinais" para o público geral.
+**Website:** [futuresignals.news](https://futuresignals.news)
+**Version:** 1.1.0
+**Last Updated:** 2024-12-19
 
 ---
 
-## Problema
+## Proposta de Valor
+
+**FutureSignals** é uma plataforma editorial que transforma sinais de mercados de previsão em narrativas jornalísticas acessíveis, posicionando-se como a "Bloomberg dos sinais" para o público geral.
+
+---
+
+## Problema Resolvido
 
 Mercados de previsão (Polymarket) geram sinais valiosos sobre eventos futuros, mas:
 - Dados brutos são inacessíveis para não-traders
 - Mídia tradicional ignora ou reage com atraso
 - Não existe tradução editorial em escala
+- Falta correlação com sinais sociais de influenciadores
 
 ---
 
-## Solução
+## Solução Implementada
 
 Pipeline automatizado que:
-1. **Detecta** mudanças significativas em tempo real
-2. **Contextualiza** com notícias externas
-3. **Narra** em linguagem editorial (LLM)
-4. **Distribui** via site, áudio e social
+1. **Detecta** mudanças significativas em tempo real (Polymarket API)
+2. **Correlaciona** com sinais sociais de influenciadores (XTracker)
+3. **Contextualiza** com notícias externas (Perplexity)
+4. **Narra** em linguagem editorial Bloomberg-style (Qwen LLM)
+5. **Distribui** via site SSR otimizado para SEO (Astro + Cloudflare)
 
 ---
 
@@ -36,179 +46,205 @@ Pipeline automatizado que:
 
 ---
 
+## Stack Técnico (Produção)
+
+### Backend (Go 1.23+)
+| Componente | Tecnologia |
+|------------|------------|
+| Framework | Gin HTTP Router |
+| Database | MongoDB Atlas |
+| LLM | Qwen (DashScope) |
+| Context | Perplexity API |
+| Social | XTracker (Polymarket) |
+| Deploy | Kubernetes (GKE) |
+
+### Frontend (Astro 5.x)
+| Componente | Tecnologia |
+|------------|------------|
+| Framework | Astro + React Islands |
+| UI Library | shadcn/ui |
+| Styling | Tailwind CSS 4 |
+| Deploy | Cloudflare Pages (SSR) |
+| SEO | JSON-LD, Google News schema |
+
+---
+
+## Arquitetura Produção
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           FUTURESIGNALS v1.1.0                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ┌────────────────┐    ┌────────────────┐    ┌────────────────┐              │
+│  │   Polymarket   │───▶│     Signal     │───▶│   XTracker     │              │
+│  │    Poller      │    │    Detector    │    │   Correlator   │              │
+│  └────────────────┘    └────────────────┘    └────────────────┘              │
+│         │                     │                     │                         │
+│         ▼                     ▼                     ▼                         │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │                     Content Generator + LLM                              │ │
+│  │       Qwen Narratives │ Perplexity Context │ Social Signals              │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                    │                                          │
+│                                    ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │                          MongoDB Atlas                                   │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                    │                                          │
+│                                    ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │                         REST API (Gin)                                   │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                    │                                          │
+│                                    ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │              Frontend (Astro SSR @ Cloudflare Workers)                   │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Features Implementadas
+
+### Backend
+- [x] Signal detector com thresholds configuráveis
+- [x] Polymarket API client com rate limiting
+- [x] Qwen LLM integration (DashScope)
+- [x] Perplexity context enrichment
+- [x] XTracker social signal correlation
+- [x] MongoDB persistence
+- [x] REST API completa
+- [x] Backfill tool para dados históricos
+
+### Frontend
+- [x] Homepage com feed personalizado
+- [x] Páginas de artigos com SEO
+- [x] Market cards com probability bars
+- [x] Market Pulse (sentiment por categoria)
+- [x] Social signals display
+- [x] Twitter share + copy link
+- [x] Categorias e filtros
+- [x] SSR via Cloudflare Workers
+
+### Infrastructure
+- [x] Docker containerization
+- [x] Kubernetes deployment
+- [x] GHCR image registry
+- [x] Cloudflare Pages
+- [x] MongoDB Atlas
+
+---
+
+## Tipos de Artigo
+
+| Tipo | Trigger | Descrição |
+|------|---------|-----------|
+| `breaking` | Δ prob > 10% | Notícia urgente |
+| `trending` | Volume + movimento | Mercado em alta |
+| `new_market` | Novo + volume | Mercado recém-criado |
+| `briefing` | Horário | Resumo diário |
+| `deep_dive` | Manual | Análise profunda |
+| `social_signal` | XTracker | Baseado em tweets |
+
+---
+
+## Custos Operacionais
+
+| Item | Custo Mensal |
+|------|--------------|
+| MongoDB Atlas (M0) | $0 |
+| GKE Autopilot | ~$50 |
+| Cloudflare Pages | $0 |
+| Qwen API | ~$20-50 |
+| Perplexity API | ~$10-20 |
+| **Total** | **~$80-120** |
+
+---
+
 ## Modelo de Negócio
 
-### Fase 1 (MVP)
-- Google AdSense
-- Google News
-- Afiliados editoriais
+### Fase Atual (MVP)
+- Google AdSense (pendente aplicação)
+- Google News indexing
+- Organic SEO traffic
 
-### Fase 2+
+### Fase 2 (Q1 2025)
 - Newsletter premium
-- API para mídia
-- Terminal institucional
+- RSS feeds
+- Social publishing automation
+
+### Fase 3 (Q2 2025)
+- API para mídia/traders
+- Audio briefings (ElevenLabs)
+- Expand: Kalshi, Metaculus
 
 ---
 
-## Stack Técnico
+## Métricas (a acompanhar)
 
-### APIs Necessárias
-| API | Função |
-|-----|--------|
-| Polymarket Data | Sinais + probabilidades |
-| Polymarket Gamma | Contexto + categorização |
-| Web Search | Contextualização factual |
-| Claude/OpenAI | Geração editorial |
-| ElevenLabs (opcional) | Áudio/vídeo |
-
-### Backend: **Golang** (recomendado)
-
-| Critério | Golang | Python |
-|----------|--------|--------|
-| Performance real-time | +++ | + |
-| Concorrência (polling APIs) | +++ | ++ |
-| Deploy K8s | +++ | ++ |
-| Suas skills | +++ | ++ |
-| Libs LLM | ++ | +++ |
-| Prototipagem rápida | ++ | +++ |
-
-**Decisão:** Golang para core + Python para LLM scripts (híbrido).
+| Métrica | Target Mês 1 | Target Mês 3 |
+|---------|--------------|--------------|
+| Articles/day | 10-20 | 50+ |
+| Page views | 1k | 10k |
+| Google News | Pending | Indexed |
+| AdSense | Applied | Active |
 
 ---
 
-## MVP Scope (4 semanas)
+## Próximos Passos
 
-### Semana 1-2: Foundation
-- [ ] Signal detector (thresholds simples)
-- [ ] Polymarket client
-- [ ] Classificador de categorias
+### Imediato
+1. Aplicar Google AdSense
+2. Submeter para Google News
+3. Adicionar mais influenciadores ao XTracker tracking
+4. Implementar RSS feeds
 
-### Semana 3: Editorial Engine
-- [ ] Integração LLM
-- [ ] Template narrativo
-- [ ] Web search context
+### Curto Prazo
+1. Newsletter com Resend
+2. Social publishing (Twitter bot)
+3. Audio briefings
 
-### Semana 4: Distribution
-- [ ] Site estático (Hugo/Next)
-- [ ] RSS/Sitemap
-- [ ] Social publishing
-
----
-
-## Heurísticas de Sinal (v1)
-
-```
-SINAL DETECTADO SE:
-├─ Δ probabilidade ≥ ±7% em 24h
-├─ Volume > 2x média 7 dias
-├─ Reversão de tendência (3 dias consecutivos)
-└─ Mercado novo com > $50k volume em 48h
-```
+### Médio Prazo
+1. Kalshi integration
+2. Premium API tier
+3. Mobile app
 
 ---
 
-## Arquitetura MVP
+## Compliance
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    SIGNAL PIPELINE                       │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  ┌──────────────┐    ┌──────────────┐    ┌───────────┐  │
-│  │  Polymarket  │───▶│   Signal     │───▶│  Context  │  │
-│  │  Poller (Go) │    │   Detector   │    │  Builder  │  │
-│  └──────────────┘    └──────────────┘    └───────────┘  │
-│                                                │         │
-│                                                ▼         │
-│  ┌──────────────┐    ┌──────────────┐    ┌───────────┐  │
-│  │    Site      │◀───│   Content    │◀───│    LLM    │  │
-│  │   (Static)   │    │   Generator  │    │  (Claude) │  │
-│  └──────────────┘    └──────────────┘    └───────────┘  │
-│         │                                                │
-│         ▼                                                │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  Distribution: AdSense + Social + Google News    │   │
-│  └──────────────────────────────────────────────────┘   │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
+### AdSense
+- [x] Linguagem explicativa, nunca prescritiva
+- [x] Sem CTA financeiro
+- [x] Disclaimer editorial visível
+- [x] Sem links diretos para trading
+- [x] Categorização clara
+
+### SEO
+- [x] JSON-LD NewsArticle schema
+- [x] OpenGraph meta tags
+- [x] Twitter cards
+- [x] Sitemap.xml
+- [x] Robots.txt
 
 ---
 
-## Custos Mensais (MVP)
-
-| Item | Custo |
-|------|-------|
-| Hosting (VPS/K8s) | R$50-100 |
-| Claude API | R$50-150 |
-| Web Search API | R$0-30 |
-| Domínio + CDN | R$20 |
-| **Total** | **R$120-300/mês** |
-
----
-
-## Revenue Projetado
-
-| Timeline | Conservative | Base | Optimistic |
-|----------|--------------|------|------------|
-| Mês 6 | R$2k | R$5k | R$10k |
-| Ano 1 | R$50k | R$100k | R$200k |
-| Ano 2 | R$150k | R$400k | R$800k |
-
----
-
-## Riscos e Mitigações
-
-| Risco | Mitigação |
-|-------|-----------|
-| Polymarket rate limit | Cache agressivo + polling otimizado |
-| AdSense rejection | Linguagem 100% editorial, zero financeiro |
-| Competição (Bloomberg/Reuters) | First-mover, nicho específico |
-| Dependência Polymarket | Expandir para Kalshi, Metaculus |
-
----
-
-## Compliance AdSense
-
-- Linguagem explicativa, nunca prescritiva
-- Sem CTA financeiro ("aposte", "compre")
-- Disclaimer editorial visível
-- Sem links para trading
-- Categorização clara (não-cripto)
-
----
-
-## Próximos Passos (Esta Semana)
-
-1. **Validação API** (2h)
-   - Testar endpoints Polymarket
-   - Verificar rate limits na prática
-
-2. **Prototype Signal Detector** (4h)
-   - Script Go básico
-   - Threshold simples
-
-3. **Template Editorial** (2h)
-   - Prompt LLM v1
-   - Formato de output
-
-4. **Decisão GO/NO-GO** (1h)
-   - Baseado em validações
-
----
-
-## Decisão Final
+## Conclusão
 
 | Critério | Status |
 |----------|--------|
-| Viabilidade Técnica | ✅ Alta |
-| Viabilidade Mercado | ✅ Alta |
-| Timing | ✅ Excelente |
-| Custo Inicial | ✅ Baixo |
-| Risco | 🟡 Moderado |
+| MVP Completo | ✅ |
+| Live em Produção | ✅ |
+| SEO Otimizado | ✅ |
+| Social Signals | ✅ |
+| Monetização | 🟡 Pendente |
+| Escala | 🟡 A validar |
 
-**Recomendação: EXECUTAR como side project (30% tempo)**
+**Status:** OPERACIONAL - Aguardando aprovação AdSense e indexação Google News
 
 ---
 
-*Documento gerado em: 2025-12-19*
+*Atualizado em: 2024-12-19*
