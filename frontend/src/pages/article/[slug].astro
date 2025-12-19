@@ -21,11 +21,55 @@ if (!article) {
 const typeBadge = getArticleTypeBadge(article.type);
 const publishedDate = formatFullDate(article.publishedAt);
 const hasMarkets = article.markets && article.markets.length > 0;
+
+// JSON-LD NewsArticle Schema for Google News
+const articleUrl = `https://futuresignals.news/article/${article.slug}`;
+const newsArticleSchema = {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": article.title,
+  "description": article.summary,
+  "url": articleUrl,
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": articleUrl
+  },
+  "image": {
+    "@type": "ImageObject",
+    "url": "https://futuresignals.news/logo.png",
+    "width": 1200,
+    "height": 630
+  },
+  "datePublished": article.publishedAt,
+  "dateModified": article.updatedAt || article.publishedAt,
+  "author": {
+    "@type": "Organization",
+    "name": "FutureSignals",
+    "url": "https://futuresignals.news"
+  },
+  "publisher": {
+    "@type": "NewsMediaOrganization",
+    "name": "FutureSignals",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://futuresignals.news/logo.png"
+    }
+  },
+  "articleSection": article.category,
+  "keywords": article.tags?.join(", ") || article.category,
+  "isAccessibleForFree": true
+};
 ---
 
 <Base
   title={article.title}
   description={article.summary}
+  type="article"
+  publishedTime={article.publishedAt}
+  modifiedTime={article.updatedAt || article.publishedAt}
+  section={article.category}
+  tags={article.tags || []}
+  jsonLd={newsArticleSchema}
 >
   <article class="container py-8 max-w-4xl mx-auto">
     <!-- Article Header -->

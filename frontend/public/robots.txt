@@ -1,0 +1,17 @@
+# FutureSignals - Prediction Market News
+# https://futuresignals.news
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://futuresignals.news/sitemap-index.xml
+
+# Google News
+User-agent: Googlebot-News
+Allow: /article/
+Allow: /category/
+
+# Crawl-delay for politeness
+User-agent: *
+Crawl-delay: 1

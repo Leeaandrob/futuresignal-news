@@ -14,7 +14,7 @@ export async function GET(context: APIContext) {
   return rss({
     title: 'FutureSignals',
     description: 'Real-time signals from prediction markets. Editorial analysis of what markets are pricing in.',
-    site: context.site || 'https://futuresignals.app',
+    site: context.site || 'https://futuresignals.news',
     items: articles.map((article) => ({
       title: article.title,
       pubDate: new Date(article.publishedAt),

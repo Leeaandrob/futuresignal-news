@@ -7,15 +7,31 @@ interface Props {
   title: string;
   description?: string;
   image?: string;
+  type?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  section?: string;
+  tags?: string[];
+  jsonLd?: Record<string, any>;
 }
 
 const {
   title,
   description = "Real-time signals from prediction markets. Editorial analysis of what markets are pricing in.",
   image = "/og-image.png",
+  type = "website",
+  publishedTime,
+  modifiedTime,
+  author = "FutureSignals",
+  section,
+  tags = [],
+  jsonLd,
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const siteUrl = "https://futuresignals.news";
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || siteUrl);
+const absoluteImage = image.startsWith("http") ? image : `${siteUrl}${image}`;
 ---
 
 <!doctype html>
@@ -43,20 +59,60 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <title>{title} | FutureSignals</title>
     <meta name="title" content={`${title} | FutureSignals`} />
     <meta name="description" content={description} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content={author} />
+    <meta name="publisher" content="FutureSignals" />
+
+    <!-- Google News -->
+    <meta name="news_keywords" content="prediction markets, polymarket, crypto, politics, finance, trading signals" />
+    {type === "article" && <meta name="article:author" content={author} />}
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={type} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={`${title} | FutureSignals`} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={image} />
+    <meta property="og:image" content={absoluteImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="FutureSignals" />
+    <meta property="og:locale" content="en_US" />
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+    {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+    {section && <meta property="article:section" content={section} />}
+    {tags.map((tag) => <meta property="article:tag" content={tag} />)}
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
-    <meta property="twitter:title" content={`${title} | FutureSignals`} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@futuresignals" />
+    <meta name="twitter:creator" content="@futuresignals" />
+    <meta name="twitter:url" content={canonicalURL.toString()} />
+    <meta name="twitter:title" content={`${title} | FutureSignals`} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={absoluteImage} />
+
+    <!-- JSON-LD Structured Data -->
+    {jsonLd && (
+      <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    )}
+
+    <!-- Organization Schema (always present) -->
+    <script type="application/ld+json">
+      {JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "NewsMediaOrganization",
+        "name": "FutureSignals",
+        "url": "https://futuresignals.news",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://futuresignals.news/logo.png"
+        },
+        "sameAs": [
+          "https://twitter.com/futuresignals"
+        ],
+        "description": "Real-time signals from prediction markets. Editorial analysis of what markets are pricing in."
+      })}
+    </script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
