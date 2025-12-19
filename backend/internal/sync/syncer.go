@@ -215,10 +215,10 @@ func (s *Syncer) syncMarkets() {
 
 	log.Debug().Int("count", len(events)).Msg("Fetched events from Polymarket")
 
-	// Process all markets from events with correct event slugs
+	// Process all markets from events with correct event slugs and event volume
 	for _, event := range events {
 		for _, pm := range event.Markets {
-			s.processMarketWithEventSlug(pm, event.Slug)
+			s.processMarketWithEvent(pm, event)
 		}
 	}
 
@@ -226,15 +226,15 @@ func (s *Syncer) syncMarkets() {
 	s.updateTrendingScores()
 }
 
-// processMarketWithEventSlug processes a single market update with the correct event slug for URL.
-func (s *Syncer) processMarketWithEventSlug(pm polymarket.Market, eventSlug string) {
+// processMarketWithEvent processes a single market update with full event data.
+func (s *Syncer) processMarketWithEvent(pm polymarket.Market, event polymarket.Event) {
 	// Skip low volume markets
 	if pm.Volume24hr < s.config.MinVolume24h {
 		return
 	}
 
-	// Convert to our model with correct event slug
-	market := s.convertMarketWithEventSlug(pm, eventSlug)
+	// Convert to our model with event data (slug + volumes)
+	market := s.convertMarketWithEvent(pm, event)
 
 	// Check cache for existing market
 	s.cacheMux.RLock()
@@ -396,8 +396,8 @@ func (s *Syncer) processMarket(pm polymarket.Market) {
 	}
 }
 
-// convertMarketWithEventSlug converts a Polymarket market to our model with the correct event slug.
-func (s *Syncer) convertMarketWithEventSlug(pm polymarket.Market, eventSlug string) *models.Market {
+// convertMarketWithEvent converts a Polymarket market to our model with full event data.
+func (s *Syncer) convertMarketWithEvent(pm polymarket.Market, event polymarket.Event) *models.Market {
 	// Convert outcome prices from strings to floats
 	var outcomePrices []float64
 	for _, p := range pm.OutcomePrices {
@@ -415,6 +415,8 @@ func (s *Syncer) convertMarketWithEventSlug(pm polymarket.Market, eventSlug stri
 		Probability:    pm.YesPrice,
 		Volume24h:      pm.Volume24hr,
 		TotalVolume:    pm.VolumeNum,
+		EventVolume:    event.Volume,
+		EventVolume24h: event.Volume24hr,
 		Liquidity:      pm.LiquidityNum,
 		Active:         pm.Active,
 		Closed:         pm.Closed,
@@ -424,7 +426,7 @@ func (s *Syncer) convertMarketWithEventSlug(pm polymarket.Market, eventSlug stri
 		Outcomes:       []string(pm.Outcomes),
 		OutcomePrices:  outcomePrices,
 		UpdatedAt:      time.Now(),
-		PolymarketURL:  "https://polymarket.com/event/" + eventSlug,
+		PolymarketURL:  "https://polymarket.com/event/" + event.Slug,
 	}
 
 	// Detect category

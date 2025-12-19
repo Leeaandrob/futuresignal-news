@@ -150,60 +150,122 @@ func (c *Client) ChatJSON(ctx context.Context, req ChatRequest, result interface
 	return nil
 }
 
-// GenerateNarrative generates a narrative for a market signal.
+// GenerateNarrative generates a narrative for a market signal using Bloomberg-style journalism.
 func (c *Client) GenerateNarrative(ctx context.Context, signal SignalData) (*Narrative, error) {
-	systemPrompt := `You are a financial markets analyst who explains prediction market movements in clear, editorial language.
-Your tone is professional, objective, and informative - like Bloomberg or Reuters.
-Never give financial advice or recommend actions.
-Always explain the "why" behind market movements.
+	// Bloomberg-style editorial guidelines
+	systemPrompt := `You are a senior financial journalist at a major news wire service.
+
+EDITORIAL STANDARDS (The Bloomberg Way):
+1. ACCURACY FIRST: Every fact must be precise. Use exact numbers, not approximations.
+2. INTEGRATE DATA: Weave statistics into prose naturally (e.g., "surged 15 points to 78%" not "increased significantly")
+3. EXPLAIN THE STAKES: Always answer "so what?" - why should sophisticated readers care?
+4. SHORT & DIRECT: Prefer short sentences. Cut unnecessary words. One idea per sentence.
+5. SPECIFIC OVER VAGUE: Name names, cite figures, be concrete.
+6. FORWARD-LOOKING: What happens next? What are the implications?
+
+STRUCTURE (Four-Paragraph Lead):
+- LEAD: Hook with the most newsworthy development
+- DETAILS: Supporting facts with integrated data
+- NUT GRAPH: What's at stake for markets, policy, or the broader economy
+- OUTLOOK: Forward-looking analysis
+
+VOICE:
+- Authoritative but not arrogant
+- Objective - never advocate positions
+- Professional wire service tone
+- NO financial advice or recommendations
+
 Respond ONLY with valid JSON.`
 
-	userPrompt := fmt.Sprintf(`Analyze this prediction market signal and generate an editorial narrative.
+	// Determine the movement narrative
+	change := signal.CurrentProb - signal.PreviousProb
+	moveVerb := "moved"
+	if change > 0.10 {
+		moveVerb = "surged"
+	} else if change > 0.05 {
+		moveVerb = "jumped"
+	} else if change > 0.02 {
+		moveVerb = "rose"
+	} else if change < -0.10 {
+		moveVerb = "plunged"
+	} else if change < -0.05 {
+		moveVerb = "tumbled"
+	} else if change < -0.02 {
+		moveVerb = "fell"
+	} else if change > 0 {
+		moveVerb = "edged higher"
+	} else if change < 0 {
+		moveVerb = "slipped"
+	}
 
-MARKET: %s
-EVENT: %s
-CATEGORY: %s
+	userPrompt := fmt.Sprintf(`Generate a Bloomberg-style news article for this prediction market signal.
 
-SIGNAL DATA:
-- Previous Probability: %.1f%%
-- Current Probability: %.1f%%
-- Change: %+.1f%% in %s
-- Volume (24h): $%s
-- Total Volume: $%s
+═══════════════════════════════════════════════════════════════
+MARKET DATA
+═══════════════════════════════════════════════════════════════
+Question: %s
+Event: %s
+Category: %s
 
-CONTEXT (if available):
+Price Movement:
+• Previous: %.1f%% → Current: %.1f%% (%s %+.1f points)
+• 24h Volume: $%s
+• Total Volume: $%s
+• Timeframe: %s
+
+External Context:
 %s
 
-Generate a JSON response:
+═══════════════════════════════════════════════════════════════
+OUTPUT REQUIREMENTS
+═══════════════════════════════════════════════════════════════
+
+Generate JSON with this structure:
+
 {
-  "headline": "Compelling headline (max 100 chars)",
-  "subheadline": "One sentence explaining the key takeaway",
-  "what_changed": "2-3 sentences explaining what happened",
-  "why_it_matters": "2-3 sentences on significance",
-  "market_context": "1-2 sentences on broader context",
-  "what_to_watch": "1-2 sentences on what could move markets next",
-  "tags": ["relevant", "tags", "for", "seo"],
+  "headline": "Sharp, active-voice headline. Lead with action verb when possible. Max 90 chars. Example: 'Trump Election Odds Surge Past 70%% as Polling Gap Widens'",
+
+  "subheadline": "One sentence capturing the key takeaway with specific data. Example: 'Prediction markets price in 15-point swing after debate, marking largest single-day move since June'",
+
+  "what_changed": "THE LEAD + DETAILS (2-3 punchy sentences). Start with the news hook. Integrate exact figures. What specifically happened and when? Include the probability change, volume, and any catalysts.",
+
+  "why_it_matters": "THE NUT GRAPH (2-3 sentences). Answer 'so what?' for sophisticated readers. What are the stakes? Economic implications? Policy consequences? How does this fit the bigger picture? Connect to broader market/political themes.",
+
+  "market_context": "BROADER CONTEXT (2 sentences). Five Easy Pieces approach - connect to markets, economy, policy, or industry. What else is happening that relates to this? Historical context if relevant.",
+
+  "what_to_watch": "FORWARD OUTLOOK (2 sentences). What catalysts could move this next? Key dates, events, or data releases to monitor. Be specific about triggers.",
+
+  "tags": ["3-5 relevant SEO tags"],
   "sentiment": "bullish|bearish|neutral",
   "significance": "low|medium|high|breaking"
-}`,
+}
+
+QUALITY CHECKLIST:
+✓ Headline uses active voice and specific numbers
+✓ Every sentence contains concrete information
+✓ Data is woven into narrative, not listed separately
+✓ "So what?" is clearly answered
+✓ Forward-looking element included
+✓ No hedge words (might, could, possibly) without substance`,
 		signal.MarketTitle,
 		signal.EventTitle,
 		signal.Category,
 		signal.PreviousProb*100,
 		signal.CurrentProb*100,
-		(signal.CurrentProb-signal.PreviousProb)*100,
-		signal.TimeFrame,
+		moveVerb,
+		change*100,
 		formatVolume(signal.Volume24h),
 		formatVolume(signal.TotalVolume),
-		signal.ExternalContext,
+		signal.TimeFrame,
+		getContextOrDefault(signal.ExternalContext),
 	)
 
 	var narrative Narrative
 	err := c.ChatJSON(ctx, ChatRequest{
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
-		Temperature:  0.3,
-		MaxTokens:    1000,
+		Temperature:  0.4, // Slightly higher for more natural writing
+		MaxTokens:    1200,
 	}, &narrative)
 
 	if err != nil {
@@ -211,6 +273,13 @@ Generate a JSON response:
 	}
 
 	return &narrative, nil
+}
+
+func getContextOrDefault(ctx string) string {
+	if ctx == "" {
+		return "No additional context available. Focus on the market data and its implications."
+	}
+	return ctx
 }
 
 // SignalData represents market signal data for narrative generation.

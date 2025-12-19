@@ -38,6 +38,10 @@ type Market struct {
 	Volume7d    float64 `bson:"volume_7d" json:"volume_7d"`
 	TotalVolume float64 `bson:"total_volume" json:"total_volume"`
 
+	// Event-level volume (for multi-outcome markets)
+	EventVolume   float64 `bson:"event_volume,omitempty" json:"event_volume,omitempty"`
+	EventVolume24h float64 `bson:"event_volume_24h,omitempty" json:"event_volume_24h,omitempty"`
+
 	// Liquidity
 	Liquidity float64 `bson:"liquidity" json:"liquidity"`
 

@@ -336,6 +336,16 @@ func (c *Client) GetEvents(ctx context.Context, filters EventFilters) ([]Event, 
 		return nil, fmt.Errorf("failed to parse events: %w", err)
 	}
 
+	// Parse outcome prices for markets within events
+	for i := range events {
+		for j := range events[i].Markets {
+			if len(events[i].Markets[j].OutcomePrices) >= 2 {
+				events[i].Markets[j].YesPrice, _ = strconv.ParseFloat(events[i].Markets[j].OutcomePrices[0], 64)
+				events[i].Markets[j].NoPrice, _ = strconv.ParseFloat(events[i].Markets[j].OutcomePrices[1], 64)
+			}
+		}
+	}
+
 	log.Debug().
 		Int("count", len(events)).
 		Msg("Fetched events")
@@ -360,6 +370,14 @@ func (c *Client) GetEvent(ctx context.Context, slug string) (*Event, error) {
 	var event Event
 	if err := json.Unmarshal(resp.Body(), &event); err != nil {
 		return nil, fmt.Errorf("failed to parse event: %w", err)
+	}
+
+	// Parse outcome prices for markets within event
+	for i := range event.Markets {
+		if len(event.Markets[i].OutcomePrices) >= 2 {
+			event.Markets[i].YesPrice, _ = strconv.ParseFloat(event.Markets[i].OutcomePrices[0], 64)
+			event.Markets[i].NoPrice, _ = strconv.ParseFloat(event.Markets[i].OutcomePrices[1], 64)
+		}
 	}
 
 	return &event, nil

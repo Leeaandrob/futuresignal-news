@@ -496,7 +496,6 @@ type CategoryDigestContent struct {
 
 func (g *Generator) generateBriefingContent(ctx context.Context, briefingType models.BriefingType, markets []models.MarketRef) (*BriefingContent, error) {
 	if g.llm == nil {
-		// Return basic content without LLM
 		return &BriefingContent{
 			Summary:     fmt.Sprintf("Your %s prediction market briefing with %d markets", briefingType, len(markets)),
 			Overview:    "Here are the top prediction markets to watch.",
@@ -506,29 +505,57 @@ func (g *Generator) generateBriefingContent(ctx context.Context, briefingType mo
 		}, nil
 	}
 
-	// Build market summary for prompt
+	// Build market summary with Bloomberg-style data integration
 	var marketSummary strings.Builder
+	totalVolume := 0.0
+	biggestMover := ""
+	biggestMove := 0.0
+
 	for i, m := range markets {
-		if i >= 10 { // Limit to 10 for prompt
+		if i >= 10 {
 			break
 		}
-		marketSummary.WriteString(fmt.Sprintf("- %s: %.1f%% (%.1f%% change, $%.0f volume)\n",
-			m.Question, m.Probability*100, m.Change24h*100, m.Volume24h))
+		totalVolume += m.Volume24h
+		if abs(m.Change24h) > abs(biggestMove) {
+			biggestMove = m.Change24h
+			biggestMover = m.Question
+		}
+		marketSummary.WriteString(fmt.Sprintf("• %s: %.0f%% (%+.1fpts, $%.0fK vol)\n",
+			m.Question, m.Probability*100, m.Change24h*100, m.Volume24h/1000))
 	}
 
-	prompt := fmt.Sprintf(`Generate a %s briefing for prediction markets.
+	systemPrompt := `You are a senior financial journalist writing a market briefing in Bloomberg wire service style.
+
+STYLE GUIDE:
+- Lead with the most significant development
+- Integrate specific numbers into prose (not bullet points in the output)
+- Short, punchy sentences
+- Answer "so what?" for sophisticated readers
+- Forward-looking closing
+
+Respond ONLY with valid JSON.`
+
+	prompt := fmt.Sprintf(`Write a %s MARKET BRIEFING in Bloomberg style.
+
+═══════════════════════════════════════════════════════════════
+MARKET DATA
+═══════════════════════════════════════════════════════════════
+Total 24h Volume: $%.1fM
+Biggest Mover: %s (%+.1f points)
 
 MARKETS:
 %s
 
-Generate JSON:
+═══════════════════════════════════════════════════════════════
+OUTPUT
+═══════════════════════════════════════════════════════════════
 {
-  "summary": "2-sentence executive summary",
-  "overview": "3-4 sentences covering the main themes",
-  "key_insights": "2-3 key insights from the data",
-  "highlights": ["highlight 1", "highlight 2", "highlight 3"],
-  "what_to_watch": "1-2 sentences on what to monitor"
-}`, briefingType, marketSummary.String())
+  "summary": "Bloomberg-style 2-sentence executive summary. Lead with the biggest story. Include specific numbers.",
+  "overview": "3-4 sentences covering main market themes. Weave in specific data. Explain what's driving activity.",
+  "key_insights": "2-3 sentences of analysis. What patterns emerge? What do the odds imply? Connect to real-world events.",
+  "highlights": ["Specific highlight with data", "Another concrete observation", "Forward-looking point"],
+  "what_to_watch": "2 sentences on upcoming catalysts. Be specific about dates/events that could move markets."
+}`, briefingType, totalVolume/1_000_000, biggestMover, biggestMove*100, marketSummary.String())
 
 	var result struct {
 		Summary     string   `json:"summary"`
@@ -539,10 +566,10 @@ Generate JSON:
 	}
 
 	err := g.llm.ChatJSON(ctx, qwen.ChatRequest{
-		SystemPrompt: "You are a financial markets analyst. Generate concise, professional market briefings.",
+		SystemPrompt: systemPrompt,
 		UserPrompt:   prompt,
-		Temperature:  0.3,
-		MaxTokens:    800,
+		Temperature:  0.4,
+		MaxTokens:    1000,
 	}, &result)
 
 	if err != nil {
@@ -558,6 +585,13 @@ Generate JSON:
 	}, nil
 }
 
+func abs(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
 func (g *Generator) generateTrendingContent(ctx context.Context, markets []models.MarketRef) (*TrendingContent, error) {
 	if g.llm == nil {
 		return &TrendingContent{
@@ -571,36 +605,66 @@ func (g *Generator) generateTrendingContent(ctx context.Context, markets []model
 		}, nil
 	}
 
+	// Calculate aggregate stats
 	var marketSummary strings.Builder
+	totalVolume := 0.0
+	topMarket := ""
+	topVolume := 0.0
+
 	for i, m := range markets {
 		if i >= 10 {
 			break
 		}
-		marketSummary.WriteString(fmt.Sprintf("- %s: %.1f%% ($%.0fK volume)\n",
-			m.Question, m.Probability*100, m.Volume24h/1000))
+		totalVolume += m.Volume24h
+		if m.Volume24h > topVolume {
+			topVolume = m.Volume24h
+			topMarket = m.Question
+		}
+		marketSummary.WriteString(fmt.Sprintf("• %s: %.0f%% ($%.0fK 24h vol, %+.1fpts)\n",
+			m.Question, m.Probability*100, m.Volume24h/1000, m.Change24h*100))
 	}
 
-	prompt := fmt.Sprintf(`Analyze these trending prediction markets:
+	systemPrompt := `You are a senior financial journalist at a wire service covering prediction markets.
 
+STYLE: Bloomberg/Reuters wire service
+- Active voice headlines with specific numbers
+- Lead with the most newsworthy angle
+- Integrate data into narrative prose
+- Answer "why is this trending?" and "so what?"
+- Short, punchy sentences
+
+Respond ONLY with valid JSON.`
+
+	prompt := fmt.Sprintf(`Write a TRENDING MARKETS story in Bloomberg wire style.
+
+═══════════════════════════════════════════════════════════════
+AGGREGATE DATA
+═══════════════════════════════════════════════════════════════
+Combined 24h Volume: $%.1fM
+Top Volume Market: %s ($%.0fK)
+
+TRENDING MARKETS:
 %s
 
-Generate JSON:
+═══════════════════════════════════════════════════════════════
+OUTPUT
+═══════════════════════════════════════════════════════════════
 {
-  "headline": "Compelling headline (max 80 chars)",
-  "summary": "2-sentence summary",
-  "overview": "3-4 sentences on what's trending",
-  "analysis": "2-3 sentences on why these are hot",
-  "highlights": ["key point 1", "key point 2"],
-  "what_to_watch": "What to monitor next",
-  "tags": ["relevant", "tags"]
-}`, marketSummary.String())
+  "headline": "Active-voice headline with key number. Max 80 chars. Example: 'Prediction Markets See $5M Flow Into Election Bets'",
+  "summary": "2-sentence wire-style summary. Lead with the biggest story, include specific volume/probability figures.",
+  "overview": "3-4 sentences explaining what's driving volume. Connect to real-world events. Why are traders active now?",
+  "analysis": "2-3 sentences of market analysis. What do the odds imply? What's the smart money saying?",
+  "highlights": ["Specific observation with data", "Pattern or trend identified", "Forward-looking point"],
+  "what_to_watch": "2 sentences on upcoming catalysts that could drive more activity.",
+  "tags": ["relevant", "seo", "tags"]
+}`, totalVolume/1_000_000, topMarket, topVolume/1000, marketSummary.String())
 
 	var result TrendingContent
 	err := g.llm.ChatJSON(ctx, qwen.ChatRequest{
-		SystemPrompt: "You are a financial markets analyst covering prediction markets.",
+		SystemPrompt: systemPrompt,
 		UserPrompt:   prompt,
-		Temperature:  0.3,
-		MaxTokens:    600,
+		Temperature:  0.4,
+		MaxTokens:    800,
 	}, &result)
 
 	if err != nil {
@@ -624,31 +688,61 @@ func (g *Generator) generateNewMarketContent(ctx context.Context, market *models
 		}, nil
 	}
 
-	prompt := fmt.Sprintf(`A new prediction market was just created:
+	// Determine implied odds interpretation
+	impliedOutcome := "uncertain"
+	if market.Probability > 0.7 {
+		impliedOutcome = "likely"
+	} else if market.Probability < 0.3 {
+		impliedOutcome = "unlikely"
+	}
 
-QUESTION: %s
-CATEGORY: %s
-CURRENT PROBABILITY: %.1f%%
-INITIAL VOLUME: $%.0f
+	systemPrompt := `You are a senior financial journalist covering new prediction market listings.
 
-CONTEXT (if available):
+STYLE: Bloomberg/Reuters wire service
+- Explain the market's significance in broader context
+- Connect to current events when possible
+- Integrate the probability data into narrative
+- Short, punchy sentences
+- Answer "why should readers care about this new market?"
+
+Respond ONLY with valid JSON.`
+
+	contextStr := enrichedCtx
+	if contextStr == "" {
+		contextStr = "No additional context available."
+	}
+
+	prompt := fmt.Sprintf(`Write a NEW MARKET LISTING story in Bloomberg wire style.
+
+═══════════════════════════════════════════════════════════════
+NEW MARKET
+═══════════════════════════════════════════════════════════════
+Question: %s
+Category: %s
+Opening Probability: %.0f%% (implied: %s)
+Initial Volume: $%.0fK
+End Date: %s
+
+External Context:
 %s
 
-Generate JSON:
+═══════════════════════════════════════════════════════════════
+OUTPUT
+═══════════════════════════════════════════════════════════════
 {
-  "headline": "Compelling headline about this new market",
-  "summary": "2-sentence summary",
-  "overview": "What this market is about",
-  "why_it_matters": "Why traders should care",
-  "context": ["relevant context point 1", "point 2"],
-  "what_to_watch": "What could move this market",
-  "tags": ["relevant", "tags"],
+  "headline": "Active-voice headline announcing the market. Include the opening odds. Max 80 chars.",
+  "summary": "2-sentence wire-style summary. What is the market, what are opening odds, why now?",
+  "overview": "2-3 sentences explaining the market and its context. Connect to real-world events or decisions.",
+  "why_it_matters": "2-3 sentences on stakes. What happens if this resolves Yes/No? Economic/political implications?",
+  "context": ["Relevant background fact with data", "Another contextual point"],
+  "what_to_watch": "2 sentences on what could move this market. Key dates, events, catalysts.",
+  "tags": ["relevant", "seo", "tags"],
   "sentiment": "bullish|bearish|neutral"
-}`, market.Question, market.Category, market.Probability*100, market.Volume24h, enrichedCtx)
+}`, market.Question, market.Category, market.Probability*100, impliedOutcome, market.Volume24h/1000, market.EndDate, contextStr)
 
 	var result NewMarketContent
 	err := g.llm.ChatJSON(ctx, qwen.ChatRequest{
-		SystemPrompt: "You are a financial journalist covering prediction markets.",
+		SystemPrompt: systemPrompt,
 		UserPrompt:   prompt,
 		Temperature:  0.4,
 		MaxTokens:    600,
@@ -681,38 +775,89 @@ func (g *Generator) generateCategoryDigestContent(ctx context.Context, category 
 		}, nil
 	}
 
+	// Build market summary with aggregate stats
 	var marketSummary strings.Builder
+	totalVolume := 0.0
+	avgProb := 0.0
+	bullishCount := 0
+	bearishCount := 0
+
 	for i, m := range markets {
 		if i >= 10 {
 			break
 		}
-		marketSummary.WriteString(fmt.Sprintf("- %s: %.1f%% (%.1f%% change)\n",
-			m.Question, m.Probability*100, m.Change24h*100))
+		totalVolume += m.Volume24h
+		avgProb += m.Probability
+		if m.Change24h > 0.02 {
+			bullishCount++
+		} else if m.Change24h < -0.02 {
+			bearishCount++
+		}
+		marketSummary.WriteString(fmt.Sprintf("• %s: %.0f%% (%+.1fpts, $%.0fK vol)\n",
+			m.Question, m.Probability*100, m.Change24h*100, m.Volume24h/1000))
 	}
 
-	prompt := fmt.Sprintf(`Create a digest for %s prediction markets:
+	marketCount := len(markets)
+	if marketCount > 10 {
+		marketCount = 10
+	}
+	if marketCount > 0 {
+		avgProb /= float64(marketCount)
+	}
+
+	// Determine overall sentiment
+	overallSentiment := "mixed"
+	if bullishCount > bearishCount*2 {
+		overallSentiment = "bullish"
+	} else if bearishCount > bullishCount*2 {
+		overallSentiment = "bearish"
+	}
+
+	systemPrompt := `You are a senior financial journalist writing a sector digest in Bloomberg wire service style.
+
+STYLE:
+- Lead with the most significant development in this category
+- Integrate specific numbers into prose
+- Connect market movements to real-world events
+- Explain what the odds imply for the category
+- Short, authoritative sentences
+
+Respond ONLY with valid JSON.`
+
+	prompt := fmt.Sprintf(`Write a %s CATEGORY DIGEST in Bloomberg wire style.
+
+═══════════════════════════════════════════════════════════════
+CATEGORY STATS
+═══════════════════════════════════════════════════════════════
+Category: %s
+Combined 24h Volume: $%.1fM
+Average Probability: %.0f%%
+Sentiment: %d bullish / %d bearish moves
+Overall Trend: %s
 
 MARKETS:
 %s
 
-Generate JSON:
+═══════════════════════════════════════════════════════════════
+OUTPUT
+═══════════════════════════════════════════════════════════════
 {
-  "headline": "Compelling digest headline",
-  "summary": "2-sentence executive summary",
-  "overview": "3-4 sentences on category state",
-  "analysis": "Key insights and patterns",
-  "highlights": ["key point 1", "key point 2"],
-  "what_to_watch": "What to monitor",
-  "tags": ["relevant", "tags"],
+  "headline": "Active-voice headline capturing category story. Include key data. Max 80 chars.",
+  "summary": "2-sentence wire-style summary. Lead with the biggest story in this category.",
+  "overview": "3-4 sentences on category state. What themes are dominating? Connect to real events.",
+  "analysis": "2-3 sentences of analysis. What do the collective odds suggest? Any patterns?",
+  "highlights": ["Specific highlight with data", "Pattern or trend", "Forward-looking point"],
+  "what_to_watch": "2 sentences on upcoming catalysts for this category.",
+  "tags": ["relevant", "seo", "tags"],
   "sentiment": "bullish|bearish|neutral"
-}`, catName, marketSummary.String())
+}`, catName, catName, totalVolume/1_000_000, avgProb*100, bullishCount, bearishCount, overallSentiment, marketSummary.String())
 
 	var result CategoryDigestContent
 	err := g.llm.ChatJSON(ctx, qwen.ChatRequest{
-		SystemPrompt: "You are a financial analyst specializing in prediction markets.",
+		SystemPrompt: systemPrompt,
 		UserPrompt:   prompt,
-		Temperature:  0.3,
-		MaxTokens:    600,
+		Temperature:  0.4,
+		MaxTokens:    1000,
 	}, &result)
 
 	if err != nil {
