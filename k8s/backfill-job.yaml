@@ -11,9 +11,14 @@ spec:
       - name: backfill
         image: ghcr.io/leeaandrob/futuresignal-news/backend:latest
         command: ["/app/backfill"]
-        envFrom:
-        - secretRef:
-            name: futuresignals-secrets
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: futuresignals-secrets
+              key: mongo-uri
+        - name: MONGODB_DATABASE
+          value: "futuresignals"
         resources:
           requests:
             memory: "128Mi"
