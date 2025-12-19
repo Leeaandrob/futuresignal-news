@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: futuresignals-backend
+  namespace: futuresignals
+  labels:
+    app: futuresignals-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: futuresignals-backend
+  template:
+    metadata:
+      labels:
+        app: futuresignals-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/leeaandrob/futuresignal-news/backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: HTTP_ADDR
+              value: ":8080"
+            - name: DEBUG
+              value: "false"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: futuresignals-secrets
+                  key: mongo-uri
+            - name: MONGO_DB
+              value: "futuresignals"
+            - name: DASHSCOPE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: futuresignals-secrets
+                  key: dashscope-api-key
+            - name: TAVILY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: futuresignals-secrets
+                  key: tavily-api-key
+            - name: EXA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: futuresignals-secrets
+                  key: exa-api-key
+            - name: FIRECRAWL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: futuresignals-secrets
+                  key: firecrawl-api-key
+            - name: ENABLE_ENRICHMENT
+              value: "true"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      imagePullSecrets:
+        - name: ghcr-secret

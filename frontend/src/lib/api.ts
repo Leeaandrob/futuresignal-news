@@ -23,6 +23,12 @@ function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+// Field name mappings (API field -> Frontend field)
+const fieldMappings: Record<string, string> = {
+  headline: "title",
+  subheadline: "subtitle",
+};
+
 function transformKeys(obj: any): any {
   if (obj === null || obj === undefined) return obj;
   if (Array.isArray(obj)) return obj.map(transformKeys);
@@ -30,7 +36,9 @@ function transformKeys(obj: any): any {
 
   const transformed: any = {};
   for (const key of Object.keys(obj)) {
-    const camelKey = snakeToCamel(key);
+    // First apply field mapping, then snake_case to camelCase
+    const mappedKey = fieldMappings[key] || key;
+    const camelKey = snakeToCamel(mappedKey);
     transformed[camelKey] = transformKeys(obj[key]);
   }
   return transformed;
