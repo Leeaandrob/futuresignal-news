@@ -4,21 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MarketCard } from "@/components/MarketCard";
 import { ProbabilityBar } from "@/components/ProbabilityBar";
-import { getArticleBySlug, getArticles } from "@/lib/api";
+import { getArticleBySlug } from "@/lib/api";
 import { getArticleTypeBadge, type Article } from "@/lib/types";
 import { formatFullDate, formatTimeAgo, getArticleUrl } from "@/lib/utils";
 
-export async function getStaticPaths() {
-  // At build time, fetch recent articles to pre-render
-  try {
-    const articles = await getArticles(50);
-    return articles.map((article) => ({
-      params: { slug: article.slug },
-    }));
-  } catch {
-    return [];
-  }
-}
+// SSR: Render on each request via Cloudflare Workers
+export const prerender = false;
 
 const { slug } = Astro.params;
 const article = await getArticleBySlug(slug!);

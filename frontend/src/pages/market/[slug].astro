@@ -4,22 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ProbabilityBar, OutcomePrices } from "@/components/ProbabilityBar";
 import { ArticleCard, ArticleList } from "@/components/ArticleCard";
-import { getMarketBySlug, getMarkets, getArticlesByCategory } from "@/lib/api";
+import { getMarketBySlug, getArticlesByCategory } from "@/lib/api";
 import { formatFullDate, formatTimeAgo, formatVolume, getSignificance } from "@/lib/utils";
 
-export async function getStaticPaths() {
-  try {
-    const markets = await getMarkets(100);
-    // Filter out markets with invalid slugs (containing "/" or empty)
-    return markets
-      .filter((market) => market.slug && !market.slug.includes("/"))
-      .map((market) => ({
-        params: { slug: market.slug },
-      }));
-  } catch {
-    return [];
-  }
-}
+// SSR: Render on each request via Cloudflare Workers
+export const prerender = false;
 
 const { slug } = Astro.params;
 const market = await getMarketBySlug(slug!);
