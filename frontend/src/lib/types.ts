@@ -124,7 +124,8 @@ export type ArticleType =
   | "new_market"
   | "deep_dive"
   | "digest"
-  | "explainer";
+  | "explainer"
+  | "social_signal";
 
 export type BriefingType = "morning" | "midday" | "evening" | "weekly";
 
@@ -139,6 +140,36 @@ export interface RelatedArticle {
   slug: string;
   title: string;
   type: ArticleType;
+}
+
+// =============================================================================
+// SOCIAL SIGNALS
+// =============================================================================
+
+export interface MarketMovement {
+  market_slug: string;
+  market_title: string;
+  category: string;
+  prob_before: number;
+  prob_after: number;
+  change: number;
+  time_delta: string;
+}
+
+export interface SocialSignal {
+  handle: string;
+  name: string;
+  avatar_url: string;
+  verified: boolean;
+  content: string;
+  tweet_url: string;
+  posted_at: string;
+  likes?: number;
+  retweets?: number;
+  replies?: number;
+  market_impact: number;
+  impact_window: string;
+  affected_markets?: MarketMovement[];
 }
 
 export interface Article {
@@ -162,6 +193,7 @@ export interface Article {
   expiresAt: string;
   briefingType?: BriefingType;
   enrichmentSources?: string[];
+  socialSignals?: SocialSignal[];
 }
 
 // =============================================================================
@@ -262,6 +294,7 @@ export function getArticleTypeBadge(type: ArticleType): { label: string; variant
     deep_dive: { label: "ANALYSIS", variant: "politics" },
     digest: { label: "DIGEST", variant: "secondary" },
     explainer: { label: "EXPLAINER", variant: "secondary" },
+    social_signal: { label: "SIGNAL", variant: "crypto" },
   };
   return badges[type] || { label: type.toUpperCase(), variant: "secondary" };
 }

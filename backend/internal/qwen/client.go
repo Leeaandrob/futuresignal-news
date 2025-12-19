@@ -198,6 +198,16 @@ Respond ONLY with valid JSON.`
 		moveVerb = "slipped"
 	}
 
+	// Build social signals section if available
+	socialSignalsSection := ""
+	if signal.SocialSignalsContext != "" {
+		socialSignalsSection = fmt.Sprintf(`
+
+Social Signals (Tracked Influencer Posts):
+%s
+`, signal.SocialSignalsContext)
+	}
+
 	userPrompt := fmt.Sprintf(`Generate a Bloomberg-style news article for this prediction market signal.
 
 ═══════════════════════════════════════════════════════════════
@@ -214,7 +224,7 @@ Price Movement:
 • Timeframe: %s
 
 External Context:
-%s
+%s%s
 
 ═══════════════════════════════════════════════════════════════
 OUTPUT REQUIREMENTS
@@ -227,11 +237,11 @@ Generate JSON with this structure:
 
   "subheadline": "One sentence capturing the key takeaway with specific data. Example: 'Prediction markets price in 15-point swing after debate, marking largest single-day move since June'",
 
-  "what_changed": "THE LEAD + DETAILS (2-3 punchy sentences). Start with the news hook. Integrate exact figures. What specifically happened and when? Include the probability change, volume, and any catalysts.",
+  "what_changed": "THE LEAD + DETAILS (2-3 punchy sentences). Start with the news hook. Integrate exact figures. What specifically happened and when? Include the probability change, volume, and any catalysts. If social signals are present, mention the influencer commentary as supporting context.",
 
   "why_it_matters": "THE NUT GRAPH (2-3 sentences). Answer 'so what?' for sophisticated readers. What are the stakes? Economic implications? Policy consequences? How does this fit the bigger picture? Connect to broader market/political themes.",
 
-  "market_context": "BROADER CONTEXT (2 sentences). Five Easy Pieces approach - connect to markets, economy, policy, or industry. What else is happening that relates to this? Historical context if relevant.",
+  "market_context": "BROADER CONTEXT (2 sentences). Five Easy Pieces approach - connect to markets, economy, policy, or industry. What else is happening that relates to this? Historical context if relevant. Reference any relevant social signals as primary sources.",
 
   "what_to_watch": "FORWARD OUTLOOK (2 sentences). What catalysts could move this next? Key dates, events, or data releases to monitor. Be specific about triggers.",
 
@@ -246,7 +256,8 @@ QUALITY CHECKLIST:
 ✓ Data is woven into narrative, not listed separately
 ✓ "So what?" is clearly answered
 ✓ Forward-looking element included
-✓ No hedge words (might, could, possibly) without substance`,
+✓ No hedge words (might, could, possibly) without substance
+✓ If social signals are available, cite influencers as sources (e.g., "according to @handle")`,
 		signal.MarketTitle,
 		signal.EventTitle,
 		signal.Category,
@@ -258,6 +269,7 @@ QUALITY CHECKLIST:
 		formatVolume(signal.TotalVolume),
 		signal.TimeFrame,
 		getContextOrDefault(signal.ExternalContext),
+		socialSignalsSection,
 	)
 
 	var narrative Narrative
@@ -284,15 +296,16 @@ func getContextOrDefault(ctx string) string {
 
 // SignalData represents market signal data for narrative generation.
 type SignalData struct {
-	MarketTitle     string
-	EventTitle      string
-	Category        string
-	PreviousProb    float64
-	CurrentProb     float64
-	TimeFrame       string
-	Volume24h       float64
-	TotalVolume     float64
-	ExternalContext string
+	MarketTitle          string
+	EventTitle           string
+	Category             string
+	PreviousProb         float64
+	CurrentProb          float64
+	TimeFrame            string
+	Volume24h            float64
+	TotalVolume          float64
+	ExternalContext      string
+	SocialSignalsContext string // Context from XTracker influencer posts
 }
 
 // Narrative represents a generated narrative.

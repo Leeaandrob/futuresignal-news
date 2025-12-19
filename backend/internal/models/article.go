@@ -30,6 +30,9 @@ const (
 
 	// ArticleTypeExplainer represents educational content.
 	ArticleTypeExplainer ArticleType = "explainer"
+
+	// ArticleTypeSocialSignal represents articles triggered by influencer posts.
+	ArticleTypeSocialSignal ArticleType = "social_signal"
 )
 
 // Significance represents the importance level of an article.
@@ -87,6 +90,9 @@ type Article struct {
 
 	// Enrichment sources used
 	EnrichmentSources []string `bson:"enrichment_sources,omitempty" json:"enrichment_sources,omitempty"`
+
+	// Social signals from tracked influencers
+	SocialSignals []SocialSignal `bson:"social_signals,omitempty" json:"social_signals,omitempty"`
 }
 
 // ArticleBody contains the main content sections.
@@ -109,6 +115,43 @@ type MarketRef struct {
 	Volume24h     float64 `bson:"volume_24h" json:"volume_24h"`
 	TotalVolume   float64 `bson:"total_volume" json:"total_volume"`
 	EndDate       string  `bson:"end_date,omitempty" json:"end_date,omitempty"`
+}
+
+// SocialSignal represents a correlated social signal with market impact.
+type SocialSignal struct {
+	// User info
+	Handle    string `bson:"handle" json:"handle"`
+	Name      string `bson:"name" json:"name"`
+	AvatarURL string `bson:"avatar_url" json:"avatar_url"`
+	Verified  bool   `bson:"verified" json:"verified"`
+
+	// Post content
+	Content  string    `bson:"content" json:"content"`
+	TweetURL string    `bson:"tweet_url" json:"tweet_url"`
+	PostedAt time.Time `bson:"posted_at" json:"posted_at"`
+
+	// Engagement (placeholder for Twitter API)
+	Likes    int `bson:"likes,omitempty" json:"likes,omitempty"`
+	Retweets int `bson:"retweets,omitempty" json:"retweets,omitempty"`
+	Replies  int `bson:"replies,omitempty" json:"replies,omitempty"`
+
+	// Market correlation
+	MarketImpact float64 `bson:"market_impact" json:"market_impact"`
+	ImpactWindow string  `bson:"impact_window" json:"impact_window"`
+
+	// Affected markets
+	AffectedMarkets []MarketMovement `bson:"affected_markets,omitempty" json:"affected_markets,omitempty"`
+}
+
+// MarketMovement represents a market that moved after a social signal.
+type MarketMovement struct {
+	MarketSlug  string  `bson:"market_slug" json:"market_slug"`
+	MarketTitle string  `bson:"market_title" json:"market_title"`
+	Category    string  `bson:"category" json:"category"`
+	ProbBefore  float64 `bson:"prob_before" json:"prob_before"`
+	ProbAfter   float64 `bson:"prob_after" json:"prob_after"`
+	Change      float64 `bson:"change" json:"change"`
+	TimeDelta   string  `bson:"time_delta" json:"time_delta"`
 }
 
 // BriefingType represents the type of scheduled briefing.

@@ -12,15 +12,17 @@ import (
 	"github.com/leeaandrob/futuresignals/internal/qwen"
 	"github.com/leeaandrob/futuresignals/internal/storage"
 	"github.com/leeaandrob/futuresignals/internal/sync"
+	"github.com/leeaandrob/futuresignals/internal/xtracker"
 	"github.com/rs/zerolog/log"
 )
 
 // Generator creates articles from market data.
 type Generator struct {
-	store    *storage.Store
-	syncer   *sync.Syncer
-	llm      *qwen.Client
-	enricher *enrichment.Enricher
+	store      *storage.Store
+	syncer     *sync.Syncer
+	llm        *qwen.Client
+	enricher   *enrichment.Enricher
+	correlator *xtracker.Correlator
 }
 
 // NewGenerator creates a new content generator.
@@ -30,6 +32,22 @@ func NewGenerator(store *storage.Store, syncer *sync.Syncer, llm *qwen.Client, e
 		syncer:   syncer,
 		llm:      llm,
 		enricher: enricher,
+	}
+}
+
+// SetCorrelator sets the XTracker correlator for social signal enrichment.
+func (g *Generator) SetCorrelator(correlator *xtracker.Correlator) {
+	g.correlator = correlator
+}
+
+// enrichWithSocialSignals adds social signals from XTracker to an article.
+func (g *Generator) enrichWithSocialSignals(ctx context.Context, article *models.Article) {
+	if g.correlator == nil {
+		return
+	}
+
+	if err := g.correlator.EnrichArticleWithSignals(ctx, article); err != nil {
+		log.Warn().Err(err).Str("article", article.Slug).Msg("Failed to enrich with social signals")
 	}
 }
 
@@ -99,6 +117,9 @@ func (g *Generator) GenerateBreaking(ctx context.Context, event sync.Event) (*mo
 		EnrichmentSources: sources,
 	}
 
+	// Enrich with social signals from XTracker
+	g.enrichWithSocialSignals(ctx, article)
+
 	// Save to database
 	if err := g.store.SaveArticle(ctx, article); err != nil {
 		return nil, fmt.Errorf("failed to save article: %w", err)
@@ -107,6 +128,7 @@ func (g *Generator) GenerateBreaking(ctx context.Context, event sync.Event) (*mo
 	log.Info().
 		Str("slug", article.Slug).
 		Str("headline", article.Headline).
+		Int("social_signals", len(article.SocialSignals)).
 		Msg("Breaking article generated")
 
 	return article, nil
@@ -180,6 +202,9 @@ func (g *Generator) GenerateBriefing(ctx context.Context, briefingType models.Br
 		Published:       true,
 	}
 
+	// Enrich with social signals from XTracker
+	g.enrichWithSocialSignals(ctx, article)
+
 	if err := g.store.SaveArticle(ctx, article); err != nil {
 		return nil, fmt.Errorf("failed to save article: %w", err)
 	}
@@ -187,6 +212,7 @@ func (g *Generator) GenerateBriefing(ctx context.Context, briefingType models.Br
 	log.Info().
 		Str("slug", article.Slug).
 		Int("markets", len(allMarkets)).
+		Int("social_signals", len(article.SocialSignals)).
 		Msg("Briefing generated")
 
 	return article, nil
@@ -251,6 +277,9 @@ func (g *Generator) GenerateTrending(ctx context.Context, limit int) (*models.Ar
 		Published:       true,
 	}
 
+	// Enrich with social signals from XTracker
+	g.enrichWithSocialSignals(ctx, article)
+
 	if err := g.store.SaveArticle(ctx, article); err != nil {
 		return nil, fmt.Errorf("failed to save article: %w", err)
 	}
@@ -258,6 +287,7 @@ func (g *Generator) GenerateTrending(ctx context.Context, limit int) (*models.Ar
 	log.Info().
 		Str("slug", article.Slug).
 		Int("markets", len(marketRefs)).
+		Int("social_signals", len(article.SocialSignals)).
 		Msg("Trending article generated")
 
 	return article, nil
@@ -325,12 +355,16 @@ func (g *Generator) GenerateNewMarket(ctx context.Context, market *models.Market
 		EnrichmentSources: sources,
 	}
 
+	// Enrich with social signals from XTracker
+	g.enrichWithSocialSignals(ctx, article)
+
 	if err := g.store.SaveArticle(ctx, article); err != nil {
 		return nil, fmt.Errorf("failed to save article: %w", err)
 	}
 
 	log.Info().
 		Str("slug", article.Slug).
+		Int("social_signals", len(article.SocialSignals)).
 		Msg("New market article generated")
 
 	return article, nil
@@ -402,6 +436,9 @@ func (g *Generator) GenerateCategoryDigest(ctx context.Context, category string,
 		Published:       true,
 	}
 
+	// Enrich with social signals from XTracker
+	g.enrichWithSocialSignals(ctx, article)
+
 	if err := g.store.SaveArticle(ctx, article); err != nil {
 		return nil, fmt.Errorf("failed to save article: %w", err)
 	}
@@ -409,6 +446,7 @@ func (g *Generator) GenerateCategoryDigest(ctx context.Context, category string,
 	log.Info().
 		Str("slug", article.Slug).
 		Int("markets", len(marketRefs)).
+		Int("social_signals", len(article.SocialSignals)).
 		Msg("Category digest generated")
 
 	return article, nil
@@ -440,17 +478,51 @@ func (g *Generator) generateNarrative(ctx context.Context, market *models.Market
 		return nil, fmt.Errorf("LLM client not configured")
 	}
 
+	// Get social signals context if correlator is available
+	socialSignalsCtx := ""
+	if g.correlator != nil {
+		signals, err := g.correlator.FindSignalsForMarket(ctx, market, 4*time.Hour)
+		if err == nil && len(signals) > 0 {
+			socialSignalsCtx = g.formatSocialSignalsForLLM(signals)
+		}
+	}
+
 	return g.llm.GenerateNarrative(ctx, qwen.SignalData{
-		MarketTitle:     market.Question,
-		EventTitle:      market.GroupItemTitle,
-		Category:        market.Category,
-		PreviousProb:    market.PreviousProb,
-		CurrentProb:     market.Probability,
-		TimeFrame:       "24h",
-		Volume24h:       market.Volume24h,
-		TotalVolume:     market.TotalVolume,
-		ExternalContext: enrichedCtx,
+		MarketTitle:          market.Question,
+		EventTitle:           market.GroupItemTitle,
+		Category:             market.Category,
+		PreviousProb:         market.PreviousProb,
+		CurrentProb:          market.Probability,
+		TimeFrame:            "24h",
+		Volume24h:            market.Volume24h,
+		TotalVolume:          market.TotalVolume,
+		ExternalContext:      enrichedCtx,
+		SocialSignalsContext: socialSignalsCtx,
 	})
+}
+
+// formatSocialSignalsForLLM formats social signals for LLM context.
+func (g *Generator) formatSocialSignalsForLLM(signals []models.SocialSignal) string {
+	if len(signals) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	for i, sig := range signals {
+		if i >= 3 {
+			break
+		}
+		verifiedBadge := ""
+		if sig.Verified {
+			verifiedBadge = " (verified)"
+		}
+		sb.WriteString(fmt.Sprintf("• @%s%s: \"%s\" (posted %s)\n",
+			sig.Handle,
+			verifiedBadge,
+			truncate(sig.Content, 200),
+			sig.PostedAt.Format("Jan 2, 15:04 UTC")))
+	}
+	return sb.String()
 }
 
 // LLM content types for different article types
