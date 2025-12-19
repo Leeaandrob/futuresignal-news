@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o signald ./cmd/signald
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o futuresignals ./cmd/futuresignals
 
 # Runtime stage
 FROM alpine:3.19
@@ -28,10 +28,7 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates tzdata
 
 # Copy binary from builder
-COPY --from=builder /build/signald /app/signald
-
-# Create output directory
-RUN mkdir -p /app/output
+COPY --from=builder /build/futuresignals /app/futuresignals
 
 # Non-root user for security
 RUN adduser -D -g '' appuser
@@ -39,11 +36,13 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Environment defaults
-ENV OUTPUT_DIR=/app/output
+ENV HTTP_ADDR=:8080
 ENV DEBUG=false
+
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD pgrep signald || exit 1
+    CMD wget -q --spider http://localhost:8080/api/health || exit 1
 
-ENTRYPOINT ["/app/signald"]
+ENTRYPOINT ["/app/futuresignals"]

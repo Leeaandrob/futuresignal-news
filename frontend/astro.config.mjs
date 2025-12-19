@@ -5,7 +5,7 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://futuresignals.io',
+  site: 'https://futuresignals.news',
   integrations: [
     react(),
     tailwind({
