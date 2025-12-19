@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: polymarket-url-backfill
+  namespace: futuresignals
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      containers:
+      - name: backfill
+        image: ghcr.io/leeaandrob/futuresignal-news/backend:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            # The backfill is built into the main binary, we need to build it separately
+            # For now, let's just restart the backend to pick up the new sync logic
+            echo "Backend will update URLs on next sync cycle"
+        envFrom:
+        - secretRef:
+            name: futuresignals-secrets
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: ghcr-secret
+  backoffLimit: 1
