@@ -422,7 +422,8 @@ func (g *Generator) generateSlug(headline string) string {
 
 	replacer := strings.NewReplacer(
 		"'", "", "\"", "", "?", "", "!", "", ",", "", ".", "",
-		":", "", ";", "", "(", "", ")", "",
+		":", "", ";", "", "(", "", ")", "", "%", "", "&", "and",
+		"$", "", "@", "", "#", "", "+", "", "[", "", "]", "",
 	)
 	slug = replacer.Replace(slug)
 
