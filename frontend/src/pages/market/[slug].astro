@@ -24,11 +24,13 @@ try {
 } catch {}
 
 const change = market.change24h ?? 0;
+const change7d = market.change7d ?? 0;
 const probability = market.probability ?? 0;
 const category = market.category || "world";
 const outcomes = market.outcomes || [];
 const outcomePrices = market.outcomePrices || [];
 const isPositive = change >= 0;
+const isPositive7d = change7d >= 0;
 const significance = getSignificance(change);
 ---
 
@@ -49,21 +51,58 @@ const significance = getSignificance(change);
         )}
       </div>
 
-      <h1 class="headline-xl mb-4">{market.question}</h1>
+      <div class="flex gap-4 mb-4">
+        {market.image && (
+          <img
+            src={market.image}
+            alt={market.question}
+            class="w-20 h-20 rounded-lg object-cover shrink-0"
+          />
+        )}
+        <div>
+          <h1 class="headline-xl mb-2">{market.question}</h1>
+          {market.eventTitle && (
+            <p class="text-lg text-muted-foreground">{market.eventTitle}</p>
+          )}
+        </div>
+      </div>
 
       {market.description && (
-        <p class="text-lg text-muted-foreground mb-4">{market.description}</p>
+        <p class="text-muted-foreground mb-4">{market.description}</p>
       )}
 
-      <div class="flex items-center gap-4 text-sm text-muted-foreground">
+      <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
         <span>Updated {formatTimeAgo(market.updatedAt)}</span>
+        {market.startDate && (
+          <>
+            <span>•</span>
+            <span>Started {formatFullDate(market.startDate)}</span>
+          </>
+        )}
         {market.endDate && (
           <>
             <span>•</span>
             <span>Ends {formatFullDate(market.endDate)}</span>
           </>
         )}
+        {market.resolutionSource && (
+          <>
+            <span>•</span>
+            <span>Resolution: {market.resolutionSource}</span>
+          </>
+        )}
       </div>
+
+      {/* Polymarket Tags */}
+      {market.polymarketTags && market.polymarketTags.length > 0 && (
+        <div class="flex flex-wrap gap-2 mt-4">
+          {market.polymarketTags.map((tag: any) => (
+            <Badge variant="secondary" className="text-xs">
+              {tag.label}
+            </Badge>
+          ))}
+        </div>
+      )}
     </header>
 
     <!-- Main Probability Card -->
@@ -94,6 +133,18 @@ const significance = getSignificance(change);
         <CardContent className="pt-4">
           <div class="text-sm text-muted-foreground mb-1">24h Volume</div>
           <div class="text-2xl font-bold font-mono">{formatVolume(market.volume24h)}</div>
+          <div class={`text-sm font-mono ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+            {isPositive ? '+' : ''}{(change * 100).toFixed(1)}%
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-4">
+          <div class="text-sm text-muted-foreground mb-1">7d Volume</div>
+          <div class="text-2xl font-bold font-mono">{formatVolume(market.volume7d || 0)}</div>
+          <div class={`text-sm font-mono ${isPositive7d ? 'text-green-500' : 'text-red-500'}`}>
+            {isPositive7d ? '+' : ''}{(change7d * 100).toFixed(1)}%
+          </div>
         </CardContent>
       </Card>
       <Card>
@@ -102,12 +153,40 @@ const significance = getSignificance(change);
           <div class="text-2xl font-bold font-mono">{formatVolume(market.totalVolume)}</div>
         </CardContent>
       </Card>
+    </div>
+
+    <!-- Engagement & Liquidity Stats -->
+    <div class="grid gap-4 md:grid-cols-4 mb-8">
       <Card>
         <CardContent className="pt-4">
           <div class="text-sm text-muted-foreground mb-1">Liquidity</div>
-          <div class="text-2xl font-bold font-mono">{formatVolume(market.liquidity)}</div>
+          <div class="text-xl font-bold font-mono">{formatVolume(market.liquidity)}</div>
         </CardContent>
       </Card>
+      {market.eventVolume !== undefined && market.eventVolume > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div class="text-sm text-muted-foreground mb-1">Event Volume</div>
+            <div class="text-xl font-bold font-mono">{formatVolume(market.eventVolume)}</div>
+          </CardContent>
+        </Card>
+      )}
+      {market.commentCount !== undefined && market.commentCount > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div class="text-sm text-muted-foreground mb-1">Comments</div>
+            <div class="text-xl font-bold font-mono">{market.commentCount.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+      )}
+      {market.competitorCount !== undefined && market.competitorCount > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div class="text-sm text-muted-foreground mb-1">Traders</div>
+            <div class="text-xl font-bold font-mono">{market.competitorCount.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+      )}
     </div>
 
     <!-- Trade on Polymarket -->

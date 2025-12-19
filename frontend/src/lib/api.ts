@@ -36,6 +36,9 @@ const fieldMappings: Record<string, string> = {
   change_24h: "change24h",
   change_1h: "change1h",
   change_7d: "change7d",
+  // Event-level fields
+  event_volume: "eventVolume",
+  event_volume_24h: "eventVolume24h",
 };
 
 function transformKeys(obj: any): any {
@@ -199,4 +202,5 @@ export type {
   BriefingType,
   ArticleBody,
   HomeFeedResponse,
+  PolymarketTag,
 } from "./types";

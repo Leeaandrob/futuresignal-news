@@ -9,7 +9,35 @@ import {
   getSignificance,
 } from "@/lib/utils";
 import type { Market } from "@/lib/types";
-import { TrendingUp, TrendingDown, ExternalLink, Clock, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, ExternalLink, Clock, DollarSign, MessageCircle, Users, BarChart3 } from "lucide-react";
+
+// Market image component with fallback
+function MarketImage({ src, alt, size = "md" }: { src?: string; alt: string; size?: "sm" | "md" | "lg" }) {
+  const sizeClasses = {
+    sm: "w-8 h-8",
+    md: "w-12 h-12",
+    lg: "w-16 h-16",
+  };
+
+  if (!src) {
+    return (
+      <div className={cn(sizeClasses[size], "rounded-lg bg-muted flex items-center justify-center shrink-0")}>
+        <BarChart3 className="w-1/2 h-1/2 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={cn(sizeClasses[size], "rounded-lg object-cover shrink-0")}
+      onError={(e) => {
+        e.currentTarget.style.display = "none";
+      }}
+    />
+  );
+}
 
 interface MarketCardProps {
   market: Market;
@@ -47,23 +75,26 @@ export function MarketCard({
     return (
       <a
         href={getMarketUrl(market.slug)}
-        className="flex items-start gap-2 p-3 border-b hover:bg-muted/50 transition-colors overflow-hidden"
+        className="flex items-center gap-3 p-3 border-b hover:bg-muted/50 transition-colors overflow-hidden"
       >
-        <div
-          className={cn(
-            "flex items-center gap-1 font-mono font-semibold text-xs shrink-0 mt-0.5",
-            isPositive ? "text-bullish" : "text-bearish"
-          )}
-        >
-          {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-          {isPositive ? "+" : ""}
-          {(change * 100).toFixed(1)}%
+        <MarketImage src={market.image} alt={market.question} size="sm" />
+        <div className="flex-1 min-w-0">
+          <span className="text-sm line-clamp-1 break-words">{market.question}</span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="font-mono font-bold text-sm">
+              {(probability * 100).toFixed(0)}%
+            </span>
+            <span
+              className={cn(
+                "font-mono text-xs",
+                isPositive ? "text-bullish" : "text-bearish"
+              )}
+            >
+              {isPositive ? "+" : ""}{(change * 100).toFixed(1)}%
+            </span>
+          </div>
         </div>
-        <span className="font-mono font-bold text-sm shrink-0 mt-0.5">
-          {(probability * 100).toFixed(0)}%
-        </span>
-        <span className="text-sm flex-1 line-clamp-2 break-words">{market.question}</span>
-        <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
+        <span className="text-xs text-muted-foreground shrink-0">
           {formatVolume(market.volume24h)}
         </span>
       </a>
@@ -72,6 +103,9 @@ export function MarketCard({
 
   // Detailed variant - full info with probability bar
   if (variant === "detailed") {
+    const change7d = market.change7d ?? 0;
+    const isPositive7d = change7d >= 0;
+
     return (
       <Card className="h-full hover:shadow-md transition-all">
         <CardHeader className="pb-3">
@@ -99,9 +133,19 @@ export function MarketCard({
         </CardHeader>
         <CardContent className="space-y-4">
           <a href={getMarketUrl(market.slug)} className="block group">
-            <h3 className="font-semibold text-lg leading-tight group-hover:text-brand transition-colors line-clamp-2">
-              {market.question}
-            </h3>
+            <div className="flex gap-3">
+              <MarketImage src={market.image} alt={market.question} size="lg" />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg leading-tight group-hover:text-brand transition-colors line-clamp-2">
+                  {market.question}
+                </h3>
+                {market.eventTitle && (
+                  <p className="text-sm text-muted-foreground mt-1 truncate">
+                    {market.eventTitle}
+                  </p>
+                )}
+              </div>
+            </div>
           </a>
 
           <ProbabilityBar
@@ -118,16 +162,60 @@ export function MarketCard({
             />
           )}
 
+          {/* Volume and Change Stats */}
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+              <span className="text-muted-foreground">24h</span>
+              <div className="flex items-center gap-2">
+                <span className={cn("font-mono font-medium", isPositive ? "text-bullish" : "text-bearish")}>
+                  {isPositive ? "+" : ""}{(change * 100).toFixed(1)}%
+                </span>
+                <span className="text-muted-foreground">{formatVolume(market.volume24h)}</span>
+              </div>
+            </div>
+            {market.volume7d !== undefined && (
+              <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                <span className="text-muted-foreground">7d</span>
+                <div className="flex items-center gap-2">
+                  <span className={cn("font-mono font-medium", isPositive7d ? "text-bullish" : "text-bearish")}>
+                    {isPositive7d ? "+" : ""}{(change7d * 100).toFixed(1)}%
+                  </span>
+                  <span className="text-muted-foreground">{formatVolume(market.volume7d)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Engagement Metrics */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <DollarSign className="w-4 h-4" />
-              {formatVolume(market.volume24h)} 24h
-            </span>
-            <span className="flex items-center gap-1">
+            {market.commentCount !== undefined && market.commentCount > 0 && (
+              <span className="flex items-center gap-1">
+                <MessageCircle className="w-4 h-4" />
+                {market.commentCount}
+              </span>
+            )}
+            {market.competitorCount !== undefined && market.competitorCount > 0 && (
+              <span className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                {market.competitorCount.toLocaleString()}
+              </span>
+            )}
+            <span className="flex items-center gap-1 ml-auto">
               <Clock className="w-4 h-4" />
               {formatTimeAgo(market.updatedAt)}
             </span>
           </div>
+
+          {/* Polymarket Tags */}
+          {market.polymarketTags && market.polymarketTags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {market.polymarketTags.slice(0, 3).map((tag) => (
+                <Badge key={tag.slug} variant="secondary" className="text-xs">
+                  {tag.label}
+                </Badge>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -159,16 +247,25 @@ export function MarketCard({
           </div>
         </CardHeader>
         <CardContent>
-          <h3 className="font-semibold leading-tight mb-3 line-clamp-2">
-            {market.question}
-          </h3>
+          <div className="flex gap-3 mb-3">
+            <MarketImage src={market.image} alt={market.question} size="md" />
+            <h3 className="font-semibold leading-tight line-clamp-2 flex-1">
+              {market.question}
+            </h3>
+          </div>
           <div className="flex items-center justify-between">
             <span className="font-mono font-bold text-xl">
               {(probability * 100).toFixed(0)}%
             </span>
-            <span className="text-sm text-muted-foreground">
-              {formatVolume(market.volume24h)}
-            </span>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              {market.commentCount !== undefined && market.commentCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3" />
+                  {market.commentCount}
+                </span>
+              )}
+              <span>{formatVolume(market.volume24h)}</span>
+            </div>
           </div>
         </CardContent>
       </Card>

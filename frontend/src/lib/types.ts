@@ -34,6 +34,11 @@ export type CategorySlug =
 // MARKETS
 // =============================================================================
 
+export interface PolymarketTag {
+  label: string;
+  slug: string;
+}
+
 export interface Market {
   id: string;
   marketId: string;
@@ -43,19 +48,55 @@ export interface Market {
   question: string;
   description: string;
   category: string;
+
+  // Media
+  image?: string;
+  icon?: string;
+
+  // Pricing
   probability: number;
   previousProb: number;
+  lastTradePrice?: number;
+  change1h?: number;
   change24h: number;
+  change7d?: number;
+
+  // Volume
+  volume1h?: number;
   volume24h: number;
+  volume7d?: number;
   totalVolume: number;
+
+  // Event-level data
+  eventVolume?: number;
+  eventVolume24h?: number;
+  eventTitle?: string;
+
+  // Engagement
+  commentCount?: number;
+  competitorCount?: number;
+
+  // Classification
+  polymarketTags?: PolymarketTag[];
+
+  // Resolution
+  resolutionSource?: string;
+  seriesSlug?: string;
+  startDate?: string;
+
+  // Status
   liquidity: number;
   active: boolean;
   closed: boolean;
   archived: boolean;
   acceptingBid: boolean;
   endDate: string;
+
+  // Outcomes
   outcomes: string[];
   outcomePrices: number[];
+
+  // Meta
   trendingScore: number;
   firstSeenAt: string;
   updatedAt: string;

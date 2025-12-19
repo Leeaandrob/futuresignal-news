@@ -22,6 +22,10 @@ const typeBadge = getArticleTypeBadge(article.type);
 const publishedDate = formatFullDate(article.publishedAt);
 const hasMarkets = article.markets && article.markets.length > 0;
 
+// Get the best image for the article (from first market or fallback to logo)
+const primaryMarketImage = article.markets?.[0]?.image;
+const articleImage = primaryMarketImage || "https://futuresignals.news/logo.png";
+
 // JSON-LD NewsArticle Schema for Google News
 const articleUrl = `https://futuresignals.news/article/${article.slug}`;
 const newsArticleSchema = {
@@ -36,7 +40,7 @@ const newsArticleSchema = {
   },
   "image": {
     "@type": "ImageObject",
-    "url": "https://futuresignals.news/logo.png",
+    "url": articleImage,
     "width": 1200,
     "height": 630
   },
