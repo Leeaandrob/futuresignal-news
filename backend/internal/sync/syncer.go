@@ -250,12 +250,12 @@ func (s *Syncer) processMarketWithEvent(pm polymarket.Market, event polymarket.E
 			Timestamp: time.Now(),
 		})
 	} else {
-		// Calculate changes
+		// Preserve firstSeenAt and track previous probability
 		market.FirstSeenAt = existing.FirstSeenAt
 		market.PreviousProb = existing.Probability
-		market.Change24h = market.Probability - existing.Probability
+		// Note: Change24h is already set from Polymarket API's oneDayPriceChange
 
-		// Check for breaking move
+		// Check for breaking move using API-provided 24h change
 		if abs(market.Change24h) >= s.config.BreakingThreshold {
 			s.emitEvent(Event{
 				Type:      EventBreakingMove,
@@ -335,12 +335,12 @@ func (s *Syncer) processMarket(pm polymarket.Market) {
 			Timestamp: time.Now(),
 		})
 	} else {
-		// Calculate changes
+		// Preserve firstSeenAt and track previous probability
 		market.FirstSeenAt = existing.FirstSeenAt
 		market.PreviousProb = existing.Probability
-		market.Change24h = market.Probability - existing.Probability
+		// Note: Change24h is already set from Polymarket API's oneDayPriceChange
 
-		// Check for breaking move
+		// Check for breaking move using API-provided 24h change
 		if abs(market.Change24h) >= s.config.BreakingThreshold {
 			s.emitEvent(Event{
 				Type:      EventBreakingMove,
@@ -509,6 +509,8 @@ func (s *Syncer) convertMarket(pm polymarket.Market) *models.Market {
 		Question:       pm.Question,
 		Description:    pm.Description,
 		Probability:    pm.YesPrice,
+		Change24h:      pm.OneDayPriceChange,
+		Change7d:       pm.OneWeekPriceChange,
 		Volume24h:      pm.Volume24hr,
 		TotalVolume:    pm.VolumeNum,
 		Liquidity:      pm.LiquidityNum,
