@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { getHomeFeed, type HomeFeedResponse } from "@/lib/api";
+import { getHomeFeed, getSentiment, type HomeFeedResponse, type CategorySentiment } from "@/lib/api";
 import { ArticleCard, ArticleGrid, ArticleList } from "@/components/ArticleCard";
 import { MarketCard, MarketList, TrendingMarketsWidget } from "@/components/MarketCard";
+import { MarketPulse } from "@/components/MarketPulse";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatFullDate } from "@/lib/utils";
@@ -9,14 +10,19 @@ import { Loader2, TrendingUp, Zap, Clock, ChevronRight } from "lucide-react";
 
 export function HomeFeed() {
   const [feed, setFeed] = useState<HomeFeedResponse | null>(null);
+  const [sentiments, setSentiments] = useState<CategorySentiment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadFeed() {
       try {
-        const data = await getHomeFeed();
-        setFeed(data);
+        const [feedData, sentimentData] = await Promise.all([
+          getHomeFeed(),
+          getSentiment(),
+        ]);
+        setFeed(feedData);
+        setSentiments(sentimentData);
       } catch (err) {
         setError("Failed to load feed. Please try again.");
         console.error(err);
@@ -61,6 +67,13 @@ export function HomeFeed() {
       {heroArticle && (
         <section>
           <ArticleCard article={heroArticle} variant="hero" />
+        </section>
+      )}
+
+      {/* Market Pulse - Category Momentum */}
+      {sentiments.length > 0 && (
+        <section>
+          <MarketPulse sentiments={sentiments} />
         </section>
       )}
 

@@ -211,6 +211,30 @@ export interface HealthResponse {
 }
 
 // =============================================================================
+// SENTIMENT / MARKET PULSE
+// =============================================================================
+
+export interface CategorySentiment {
+  category: string;
+  name: string;
+  color: string;
+  icon: string;
+  momentum: number;           // Volume-weighted avg change (-1 to 1)
+  totalVolume24h: number;     // Sum of all volume24h
+  marketCount: number;        // Active markets count
+  breakingCount: number;      // Markets with |change| > 10%
+  topMover?: string;          // Market with highest |change|
+  topMoverSlug?: string;      // Slug for link
+  topMoverChange: number;     // Change of top mover
+  avgChange24h: number;       // Simple average change
+}
+
+export interface SentimentResponse {
+  sentiments: CategorySentiment[];
+  count: number;
+}
+
+// =============================================================================
 // UI HELPERS
 // =============================================================================
 

@@ -454,6 +454,128 @@ type Stats struct {
 	TotalSnapshots int64 `json:"total_snapshots"`
 }
 
+// ============================================================================
+// SENTIMENT/MOMENTUM OPERATIONS
+// ============================================================================
+
+// GetCategorySentiments calculates momentum/sentiment for each category.
+// Uses volume-weighted price changes as the primary signal.
+func (s *Store) GetCategorySentiments(ctx context.Context) ([]models.CategorySentiment, error) {
+	// MongoDB aggregation pipeline to calculate per-category metrics
+	pipeline := mongo.Pipeline{
+		// Stage 1: Filter active, non-closed markets
+		{{Key: "$match", Value: bson.M{
+			"active": true,
+			"closed": false,
+		}}},
+		// Stage 2: Group by category
+		{{Key: "$group", Value: bson.M{
+			"_id":                "$category",
+			"total_volume_24h":   bson.M{"$sum": "$volume_24h"},
+			"market_count":       bson.M{"$sum": 1},
+			"sum_weighted_change": bson.M{"$sum": bson.M{"$multiply": []interface{}{"$change_24h", "$volume_24h"}}},
+			"avg_change":         bson.M{"$avg": "$change_24h"},
+			"markets": bson.M{"$push": bson.M{
+				"question":   "$question",
+				"slug":       "$slug",
+				"change_24h": "$change_24h",
+				"volume_24h": "$volume_24h",
+			}},
+		}}},
+		// Stage 3: Calculate momentum and sort
+		{{Key: "$project", Value: bson.M{
+			"category":         "$_id",
+			"total_volume_24h": 1,
+			"market_count":     1,
+			"avg_change":       1,
+			"momentum": bson.M{"$cond": bson.M{
+				"if":   bson.M{"$eq": []interface{}{"$total_volume_24h", 0}},
+				"then": 0,
+				"else": bson.M{"$divide": []interface{}{"$sum_weighted_change", "$total_volume_24h"}},
+			}},
+			"markets": 1,
+		}}},
+		// Stage 4: Sort by total volume
+		{{Key: "$sort", Value: bson.M{"total_volume_24h": -1}}},
+	}
+
+	cursor, err := s.markets.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []struct {
+		Category       string  `bson:"category"`
+		TotalVolume24h float64 `bson:"total_volume_24h"`
+		MarketCount    int     `bson:"market_count"`
+		Momentum       float64 `bson:"momentum"`
+		AvgChange      float64 `bson:"avg_change"`
+		Markets        []struct {
+			Question  string  `bson:"question"`
+			Slug      string  `bson:"slug"`
+			Change24h float64 `bson:"change_24h"`
+			Volume24h float64 `bson:"volume_24h"`
+		} `bson:"markets"`
+	}
+
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	// Convert to CategorySentiment with enriched data
+	sentiments := make([]models.CategorySentiment, 0, len(results))
+	for _, r := range results {
+		// Skip empty/dynamic categories
+		cat := models.GetCategoryBySlug(r.Category)
+		if cat == nil || cat.Dynamic {
+			continue
+		}
+
+		// Find top mover and count breaking markets
+		var topMover, topMoverSlug string
+		var topMoverChange float64
+		breakingCount := 0
+		breakingThreshold := 0.10 // 10%
+
+		for _, m := range r.Markets {
+			absChange := m.Change24h
+			if absChange < 0 {
+				absChange = -absChange
+			}
+			if absChange > breakingThreshold {
+				breakingCount++
+			}
+			currentTop := topMoverChange
+			if currentTop < 0 {
+				currentTop = -currentTop
+			}
+			if absChange > currentTop {
+				topMover = m.Question
+				topMoverSlug = m.Slug
+				topMoverChange = m.Change24h
+			}
+		}
+
+		sentiments = append(sentiments, models.CategorySentiment{
+			Category:       r.Category,
+			Name:           cat.Name,
+			Color:          cat.Color,
+			Icon:           cat.Icon,
+			Momentum:       r.Momentum,
+			TotalVolume24h: r.TotalVolume24h,
+			MarketCount:    r.MarketCount,
+			BreakingCount:  breakingCount,
+			TopMover:       topMover,
+			TopMoverSlug:   topMoverSlug,
+			TopMoverChange: topMoverChange,
+			AvgChange24h:   r.AvgChange,
+		})
+	}
+
+	return sentiments, nil
+}
+
 // GetStats returns general statistics.
 func (s *Store) GetStats(ctx context.Context) (*Stats, error) {
 	stats := &Stats{}

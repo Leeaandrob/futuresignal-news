@@ -83,6 +83,12 @@ func NewServer(store *storage.Store, s *syncer.Syncer, sched *scheduler.Schedule
 			r.Get("/", handlers.GetCategories)
 			r.Get("/{slug}", handlers.GetCategoryBySlug)
 		})
+
+		// Sentiment/Market Pulse
+		r.Route("/sentiment", func(r chi.Router) {
+			r.Get("/", handlers.GetSentiment)
+			r.Get("/{category}", handlers.GetCategorySentiment)
+		})
 	})
 
 	// Create server instance for admin routes closure

@@ -120,3 +120,19 @@ func GetDynamicCategories() []Category {
 	}
 	return dynamic
 }
+
+// CategorySentiment represents momentum/sentiment data for a category.
+type CategorySentiment struct {
+	Category       string  `bson:"category" json:"category"`
+	Name           string  `bson:"name" json:"name"`
+	Color          string  `bson:"color" json:"color"`
+	Icon           string  `bson:"icon" json:"icon"`
+	Momentum       float64 `bson:"momentum" json:"momentum"`               // Volume-weighted avg change (-1 to 1)
+	TotalVolume24h float64 `bson:"total_volume_24h" json:"total_volume_24h"` // Sum of all volume24h
+	MarketCount    int     `bson:"market_count" json:"market_count"`       // Active markets count
+	BreakingCount  int     `bson:"breaking_count" json:"breaking_count"`   // Markets with |change| > 10%
+	TopMover       string  `bson:"top_mover,omitempty" json:"top_mover,omitempty"`           // Market with highest |change|
+	TopMoverSlug   string  `bson:"top_mover_slug,omitempty" json:"top_mover_slug,omitempty"` // Slug for link
+	TopMoverChange float64 `bson:"top_mover_change" json:"top_mover_change"`                 // Change of top mover
+	AvgChange24h   float64 `bson:"avg_change_24h" json:"avg_change_24h"`   // Simple average change
+}

@@ -323,6 +323,45 @@ func (h *Handlers) GetCategoryBySlug(w http.ResponseWriter, r *http.Request) {
 }
 
 // ============================================================================
+// SENTIMENT/PULSE HANDLERS
+// ============================================================================
+
+// GetSentiment returns category momentum/sentiment data for the Market Pulse.
+func (h *Handlers) GetSentiment(w http.ResponseWriter, r *http.Request) {
+	sentiments, err := h.store.GetCategorySentiments(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to fetch sentiment data")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"sentiments": sentiments,
+		"count":      len(sentiments),
+	})
+}
+
+// GetCategorySentiment returns sentiment for a specific category.
+func (h *Handlers) GetCategorySentiment(w http.ResponseWriter, r *http.Request) {
+	category := chi.URLParam(r, "category")
+
+	sentiments, err := h.store.GetCategorySentiments(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to fetch sentiment data")
+		return
+	}
+
+	// Find the requested category
+	for _, s := range sentiments {
+		if s.Category == category {
+			respondJSON(w, http.StatusOK, s)
+			return
+		}
+	}
+
+	respondError(w, http.StatusNotFound, "Category not found")
+}
+
+// ============================================================================
 // STATS HANDLERS
 // ============================================================================
 

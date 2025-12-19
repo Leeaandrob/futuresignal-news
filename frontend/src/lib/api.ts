@@ -11,6 +11,8 @@ import type {
   StatsResponse,
   HealthResponse,
   ArticleType,
+  CategorySentiment,
+  SentimentResponse,
 } from "./types";
 
 const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
@@ -179,6 +181,23 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryDetailRes
 }
 
 // =============================================================================
+// SENTIMENT / MARKET PULSE
+// =============================================================================
+
+export async function getSentiment(): Promise<CategorySentiment[]> {
+  const data = await apiFetch<SentimentResponse>("/api/sentiment");
+  return data.sentiments || [];
+}
+
+export async function getCategorySentiment(category: string): Promise<CategorySentiment | null> {
+  try {
+    return await apiFetch<CategorySentiment>(`/api/sentiment/${category}`);
+  } catch {
+    return null;
+  }
+}
+
+// =============================================================================
 // STATS & HEALTH
 // =============================================================================
 
@@ -203,4 +222,6 @@ export type {
   ArticleBody,
   HomeFeedResponse,
   PolymarketTag,
+  CategorySentiment,
+  SentimentResponse,
 } from "./types";

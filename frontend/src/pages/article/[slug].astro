@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MarketCard } from "@/components/MarketCard";
 import { ProbabilityBar } from "@/components/ProbabilityBar";
-import { getArticleBySlug } from "@/lib/api";
+import { PulseHeaderBar } from "@/components/MarketPulse";
+import { getArticleBySlug, getSentiment } from "@/lib/api";
 import { getArticleTypeBadge, type Article } from "@/lib/types";
 import { formatFullDate, formatTimeAgo, getArticleUrl } from "@/lib/utils";
 
@@ -12,7 +13,10 @@ import { formatFullDate, formatTimeAgo, getArticleUrl } from "@/lib/utils";
 export const prerender = false;
 
 const { slug } = Astro.params;
-const article = await getArticleBySlug(slug!);
+const [article, sentiments] = await Promise.all([
+  getArticleBySlug(slug!),
+  getSentiment(),
+]);
 
 if (!article) {
   return Astro.redirect("/404");
@@ -76,6 +80,13 @@ const newsArticleSchema = {
   jsonLd={newsArticleSchema}
 >
   <article class="container py-8 max-w-4xl mx-auto">
+    <!-- Market Pulse Header Bar -->
+    {sentiments.length > 0 && (
+      <div class="mb-6">
+        <PulseHeaderBar sentiments={sentiments} currentCategory={article.category} />
+      </div>
+    )}
+
     <!-- Article Header -->
     <header class="mb-8">
       <div class="flex items-center gap-2 mb-4">
